@@ -46,3 +46,13 @@ class BaseDAL(Generic[T]):
         query = f"DELETE FROM {self.table_name} WHERE {id_column} = %(id)s"
         cur.execute(query, {"id": id_value})
         return cur.rowcount > 0
+
+    def has_children(self, cur, *, id_value: Any, child_table: str, child_column: str,) -> bool:
+            query = (
+                f"SELECT EXISTS("
+                f"  SELECT 1 FROM {child_table} WHERE {child_column} = %(id)s"
+                f") AS existe"
+            )
+            cur.execute(query, {"id": id_value})
+            row = cur.fetchone()
+            return bool(row["existe"]) if row else False

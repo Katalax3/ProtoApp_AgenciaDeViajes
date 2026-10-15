@@ -33,7 +33,7 @@ class VentanaBancos(QtWidgets.QWidget):
         try:
             with get_db_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute(query)
+                cursor.execute(query) #type: ignore
                 registros = cursor.fetchall()
                 cursor.close()
 
@@ -163,8 +163,8 @@ class VentanaBancos(QtWidgets.QWidget):
         row = index.row()
         model = self.ui.vistaBancos.model()
         if model:
-            id_banco = model.item(row, 0).text()
-            nombre = model.item(row, 1).text()
+            id_banco = model.item(row, 0).text() #type: ignore
+            nombre = model.item(row, 1).text() #type: ignore
             
             self.ui.lineIDBancos.setText(id_banco)
             self.ui.lineNombreBancos.setText(nombre)

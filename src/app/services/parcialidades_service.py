@@ -6,6 +6,13 @@ from app.models.Parcialidades import Parcialidades
 
 
 class ParcialidadesService(BaseService):
+
+
+    TABLAS_HIJAS: list[tuple[str, str]] = [
+        ("registroparcia", "idparcia"),
+    ]
+
+
     def __init__(self) -> None:
         self.dal = BaseDAL(table_name="Parcialidades", model_class=Parcialidades)
 
@@ -48,7 +55,28 @@ class ParcialidadesService(BaseService):
         return row
 
     @with_db
+    def tiene_hijos(self, idparcia: int, *, cur: Cursor, conn: Connection) -> bool:
+        for tabla, col in self.TABLAS_HIJAS:
+            if self.dal.has_children(
+                cur, id_value=idparcia,
+                child_table=tabla, child_column=col,
+            ):
+                return True
+        return False
+
+    @with_db
     def eliminar(self, idparcia: int, *, cur: Cursor, conn: Connection) -> None:
+        for tabla, col in self.TABLAS_HIJAS:
+            if self.dal.has_children(
+                cur, id_value=idparcia,
+                child_table=tabla, child_column=col,
+            ):
+                conn.rollback()
+                raise ValueError(
+                    f"No se puede eliminar la parcialidad {idparcia}: "
+                    f"tiene registros relacionados en {tabla}."
+                )
+            
         row = self.dal.delete(cur, id_value=idparcia, id_column="idparcia")
         if not row:
             conn.rollback()

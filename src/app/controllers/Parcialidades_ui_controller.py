@@ -34,6 +34,8 @@ class VentanaParcialidades(QWidget):
 
         self.ui.vistaParcialidades.doubleClicked.connect(self.on_fila_seleccionada)
 
+        self.ui.pparcialidadesEliminar.setEnabled(False)
+
         self.refrescar_tabla()
 
     def refrescar_tabla(self):
@@ -43,6 +45,25 @@ class VentanaParcialidades(QWidget):
             self.table_model.set_data(Parcialidadeses)
         except Exception as e:
             QMessageBox.critical(self, "Error", f"No se pudo cargar la lista:\n{e}")
+
+
+    def _actualizar_estado_boton_eliminar(self, idparcia: int | None):
+        if idparcia is None:
+            self.ui.pparcialidadesEliminar.setEnabled(False)
+            self.ui.pparcialidadesEliminar.setToolTip("")
+            return
+
+        try:
+            tiene_hijos = self.service.tiene_hijos(idparcia)  # type: ignore[call-arg]
+        except Exception:
+            # Si falla la consulta, por seguridad permitimos que el backend decida
+            tiene_hijos = False
+
+        self.ui.pparcialidadesEliminar.setEnabled(not tiene_hijos)
+        self.ui.pparcialidadesEliminar.setToolTip(
+            f"No se puede eliminar: la parcialidad {idparcia} tiene registros relacionados."
+            if tiene_hijos else ""
+        )
 
     def limpiar_formulario(self):
         self.ui.lineIDParcialidades.clear()
@@ -88,13 +109,32 @@ class VentanaParcialidades(QWidget):
     def on_eliminar(self):
         idParcialidades = self._id_actual()
         if idParcialidades is None:
-            QMessageBox.warning(self, "Validación", "Seleccione un parcialidad válido.")
-            return
-        if QMessageBox.question(self, "Confirmar",
-                                f"¿Eliminar parcialidad id={idParcialidades}?") != QMessageBox.StandardButton.Yes:
+            QMessageBox.warning(self, "Validación", "Seleccione una parcialidad válida.")
             return
         try:
-            self.service.eliminar(idParcialidades) # type: ignore[call-arg]
+            if self.service.tiene_hijos(idParcialidades):  # type: ignore[call-arg]
+                QMessageBox.warning(
+                    self, "Bloqueado",
+                    f"La parcialidad {idParcialidades} tiene registros relacionados "
+                    f"y no puede eliminarse."
+                )
+                self._actualizar_estado_boton_eliminar(idParcialidades)
+                return
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e))
+            return
+
+        if QMessageBox.question(
+            self, "Confirmar",
+            f"¿Eliminar parcialidad id={idParcialidades}?"
+        ) != QMessageBox.StandardButton.Yes:
+            return
+        try:
+            self.service.eliminar(idParcialidades)  # type: ignore[call-arg]
+        except ValueError as e:
+            QMessageBox.warning(self, "Bloqueado", str(e))
+            self._actualizar_estado_boton_eliminar(idParcialidades)
+            return
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))
             return
@@ -107,14 +147,23 @@ class VentanaParcialidades(QWidget):
         if idParcialidades is None:
             QMessageBox.warning(self, "Validación", "Ingrese un ID numérico.")
             return
-        Parcialidades = self.service.buscar_por_id(idParcialidades) # type: ignore[call-arg]
+        Parcialidades = self.service.buscar_por_id(idParcialidades)  # type: ignore[call-arg]
         if Parcialidades is None:
             QMessageBox.information(self, "Buscar", "No se encontró la parcialidad.")
+            self.ui.pparcialidadesEliminar.setEnabled(False)
+            self.ui.pparcialidadesEliminar.setToolTip("")
             return
         self.ui.lineTipoParcialidades.setText(Parcialidades.tipoparcia)
+        self._actualizar_estado_boton_eliminar(Parcialidades.idparcia)
 
     def on_fila_seleccionada(self, index):
         Parcialidades = self.table_model.get_Parcialidades_at(index.row())
-        if Parcialidades:
-            self.ui.lineIDParcialidades.setText(str(Parcialidades.idparcia))
-            self.ui.lineTipoParcialidades.setText(Parcialidades.tipoparcia)     
+        if not Parcialidades:
+            self.ui.pparcialidadesEliminar.setEnabled(False)
+            self.ui.pparcialidadesEliminar.setToolTip("")
+            return
+
+        self.ui.lineIDParcialidades.setText(str(Parcialidades.idparcia))
+        self.ui.lineTipoParcialidades.setText(Parcialidades.tipoparcia)
+
+        self._actualizar_estado_boton_eliminar(Parcialidades.idparcia)    
