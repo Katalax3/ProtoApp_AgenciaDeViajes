@@ -112,15 +112,33 @@ class VentanaBancos(QtWidgets.QWidget):
             QMessageBox.warning(self, "Validación", "Seleccione un banco válido para eliminar.")
             return
 
-        if QMessageBox.question(self, "Confirmar", f"¿Eliminar banco id={id_banco}?") != QMessageBox.StandardButton.Yes:
-            return
-
         try:
             with get_db_connection() as conn:
                 cursor = conn.cursor()
+                
+                # Verificar si existen registros hijos asociados en la tabla 'tarjeta'
+                cursor.execute("SELECT COUNT(*) FROM tarjeta WHERE idbanco = %s;", (id_banco,))
+                resultado = cursor.fetchone()
+                cantidad_hijos = resultado[0] if resultado else 0
+
+                if cantidad_hijos > 0:
+                    QMessageBox.warning(
+                        self,
+                        "No se puede eliminar",
+                        f"Este banco tiene {cantidad_hijos} tarjeta(s) asociada(s).\n"
+                        "Debe eliminar o reasignar las tarjetas dependientes antes de borrar el banco."
+                    )
+                    cursor.close()
+                    return
+
+                if QMessageBox.question(self, "Confirmar", f"¿Eliminar banco id={id_banco}?") != QMessageBox.StandardButton.Yes:
+                    cursor.close()
+                    return
+
                 cursor.execute("DELETE FROM banco WHERE idbanco = %s;", (id_banco,))
                 conn.commit()
                 cursor.close()
+                
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))
             return
