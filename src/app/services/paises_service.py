@@ -11,6 +11,10 @@ ID_MAX = 999999999   # NUMERIC(9)
 NOMBRE_MAX = 30
 
 
+class PaisDuplicadoError(ValueError):
+    """Se intentó guardar un país con un ID que ya existe en la tabla."""
+
+
 class PaisesService(BaseService):
     def __init__(self) -> None:
         self.dal = BaseDAL(table_name="pais", model_class=Pais)
@@ -46,13 +50,26 @@ class PaisesService(BaseService):
         return self.dal.get_by_id(cur, id_value=idpais, id_column="idpais")
 
     @with_db
+    def buscar_con_hijos(self, idpais: int, *, cur: Cursor, conn: Connection) -> tuple[Optional[Pais], int]:
+        """Regresa (país, # de ciudades hijas). Si no existe: (None, 0)."""
+        pais = self.dal.get_by_id(cur, id_value=idpais, id_column="idpais")
+        if pais is None:
+            return None, 0
+        return pais, self._contar_ciudades(cur, idpais)
+
+    @staticmethod
+    def _contar_ciudades(cur: Cursor, idpais: int) -> int:
+        cur.execute("SELECT COUNT(*) AS total FROM ciudad WHERE idpais = %(id)s", {"id": idpais})
+        return int(cur.fetchone()["total"])
+
+    @with_db
     def crear(self, idpais: str, nombre: str, *, cur: Cursor, conn: Connection) -> Pais | None:
         idpais = self._validar_id(idpais)
         nombre = self._validar_nombre(nombre)
 
         if self.dal.get_by_id(cur, id_value=idpais, id_column="idpais"):
             conn.rollback()
-            raise ValueError(f"Ya existe un país con el ID {idpais}. Use Actualizar si quiere cambiarlo.")
+            raise PaisDuplicadoError(f"Ya existe un país con el ID {idpais}.")
 
         row = self.dal.create(cur, data={"idpais": idpais, "nombre": nombre})
         if not row:
@@ -63,6 +80,7 @@ class PaisesService(BaseService):
 
     @with_db
     def actualizar(self, idpais: int, nombre: str, *, cur: Cursor, conn: Connection) -> Pais:
+        idpais = self._validar_id(idpais)
         nombre = self._validar_nombre(nombre)
         row = self.dal.update(cur, id_value=idpais, data={"nombre": nombre}, id_column="idpais")
         if row is None:
@@ -73,14 +91,14 @@ class PaisesService(BaseService):
 
     @with_db
     def eliminar(self, idpais: int, *, cur: Cursor, conn: Connection) -> None:
+        idpais = self._validar_id(idpais)
         pais = self.dal.get_by_id(cur, id_value=idpais, id_column="idpais")
         if pais is None:
             conn.rollback()
             raise ValueError(f"No existe el país con id {idpais}.")
 
         # no eliminar si tiene hijos (ciudades)
-        cur.execute("SELECT COUNT(*) AS total FROM ciudad WHERE idpais = %(id)s", {"id": idpais})
-        ciudades = cur.fetchone()["total"]
+        ciudades = self._contar_ciudades(cur, idpais)
         if ciudades > 0:
             conn.rollback()
             raise ValueError(
