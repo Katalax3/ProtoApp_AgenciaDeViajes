@@ -1,8 +1,8 @@
 import sys
 from PySide6.QtWidgets import QDialog, QMessageBox
-from app.ui import Ui_Login
+from src.app.ui import Ui_Login
 from .MenuOpciones_ui_controller import MenuOpciones
-from app.services import AuthService
+from src.app.services import AuthService
 
 class VentanaLogin(QDialog):
     def __init__(self):

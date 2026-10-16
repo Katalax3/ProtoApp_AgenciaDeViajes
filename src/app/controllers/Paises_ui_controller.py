@@ -2,9 +2,9 @@ from PySide6.QtCore import QRegularExpression, QTimer
 from PySide6.QtGui import QRegularExpressionValidator
 from PySide6.QtWidgets import QWidget, QMessageBox
 
-from app.services.paises_service import PaisesService, PaisDuplicadoError
-from app.ui import Ui_VentanaPaises
-from app.presenters.paises_table_model import PaisesTableModel
+from src.app.services.paises_service import PaisesService, PaisDuplicadoError
+from src.app.ui import Ui_VentanaPaises
+from src.app.presenters.paises_table_model import PaisesTableModel
 
 # ---- Definición de los campos (según la tabla Pais) -------------------------
 # idPais  NUMERIC(9)  -> solo dígitos, entero positivo, máx. 9 caracteres

@@ -1,6 +1,6 @@
 from typing import List
 from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
-from app.models.Parcialidades import Parcialidades
+from src.app.models.Parcialidades import Parcialidades
 
 
 class ParcialidadesTableModel(QAbstractTableModel):

@@ -1,7 +1,7 @@
 from database.connection import get_db_connection
 from psycopg.rows import dict_row
 from PySide6.QtWidgets import QMessageBox
-from app.dal import AuthDAL
+from src.app.dal import AuthDAL
 
 class AuthService:
     def autenticar_usuario(self, identificador: str, rol: str, contrasena: str) -> dict | None:

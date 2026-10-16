@@ -1,6 +1,6 @@
 from typing import List
 from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
-from app.models.Pais import Pais
+from src.app.models.Pais import Pais
 
 
 class PaisesTableModel(QAbstractTableModel):

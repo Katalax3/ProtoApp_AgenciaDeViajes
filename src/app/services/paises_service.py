@@ -1,9 +1,9 @@
 import re
 from typing import List, Optional
 from psycopg import Cursor, Connection
-from app.services.base_service import BaseService, with_db
-from app.dal import BaseDAL
-from app.models.Pais import Pais
+from src.app.services.base_service import BaseService, with_db
+from src.app.dal import BaseDAL
+from src.app.models.Pais import Pais
 
 # solo letras, acentos y espacios
 PATRON_NOMBRE = re.compile(r"^[A-Za-zÁÉÍÓÚÜáéíóúüÑñ ]+$")

@@ -1,8 +1,8 @@
 from PySide6.QtWidgets import QWidget, QMessageBox
 from PySide6.QtCore import Qt
-from app.services import ParcialidadesService
-from app.ui import Ui_VentanaParcialidades
-from app.presenters.parcialidades_table_model import ParcialidadesTableModel
+from src.app.services import ParcialidadesService
+from src.app.ui import Ui_VentanaParcialidades
+from src.app.presenters.parcialidades_table_model import ParcialidadesTableModel
 
 
 class VentanaParcialidades(QWidget):
