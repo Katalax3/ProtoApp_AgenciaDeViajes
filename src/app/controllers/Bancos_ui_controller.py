@@ -347,3 +347,9 @@ class VentanaBancos(QtWidgets.QWidget):
         """Implementa la Validación 8: Al dar clic a un registro en la cuadrícula, llenar las cajas."""
         row = index.row()
         model = self.ui.vistaBancos.model()
+        if model:
+            id_banco = model.item(row, 0).text() #type: ignore
+            nombre = model.item(row, 1).text() #type: ignore
+                    
+            self.ui.lineIDBancos.setText(id_banco)
+            self.ui.lineNombreBancos.setText(nombre)
