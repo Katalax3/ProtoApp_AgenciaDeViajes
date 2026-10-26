@@ -1,6 +1,6 @@
 -- Tablas padres
 
-CREATE TABLE IF NOT EXISTS Empleado (
+CREATE TABLE IF NOT EXISTS Empleados (
   idEmpleados NUMERIC(9) NOT NULL,
   nombre VARCHAR(30) NOT NULL,
   paterno VARCHAR(30) NOT NULL,
