@@ -8,7 +8,7 @@ from PySide6.QtGui import QIntValidator
 
 # Fallback si la BD no responde o no hay permisos
 _FALLBACK_ID_DIGITS = 9
-_FALLBACK_TIPO_LEN = 50
+_FALLBACK_TIPO_LEN = 20
 
 
 class VentanaParcialidades(QWidget):
@@ -45,6 +45,9 @@ class VentanaParcialidades(QWidget):
 
         self.ui.vistaParcialidades.clicked.connect(self.on_fila_seleccionada)
 
+        # Recuerda el Tipo que se llenó desde la BD, para saber si se debe limpiar
+        self._tipo_cargado: str | None = None
+
         self._search_timer = QTimer(self)
         self._search_timer.setSingleShot(True)
         self._search_timer.setInterval(300)  # ms
@@ -52,6 +55,16 @@ class VentanaParcialidades(QWidget):
         self.ui.lineIDParcialidades.textChanged.connect(self._on_id_text_changed)
 
         self.ui.pparcialidadesEliminar.setEnabled(False)
+
+        # Orden del tabulador ID -> Tipo -> botones -> tabla
+        # y foco inicial en el ID
+        self.setTabOrder(self.ui.lineIDParcialidades, self.ui.lineTipoParcialidades)
+        self.setTabOrder(self.ui.lineTipoParcialidades, self.ui.pparcialidadesNuevo)
+        self.setTabOrder(self.ui.pparcialidadesNuevo, self.ui.pparcialidadesActualizar)
+        self.setTabOrder(self.ui.pparcialidadesActualizar, self.ui.pparcialidadesBuscar)
+        self.setTabOrder(self.ui.pparcialidadesBuscar, self.ui.pparcialidadesEliminar)
+        self.setTabOrder(self.ui.pparcialidadesEliminar, self.ui.vistaParcialidades)
+        self.ui.lineIDParcialidades.setFocus()
 
         self.refrescar_tabla()
 
@@ -107,6 +120,11 @@ class VentanaParcialidades(QWidget):
 
         if parcialidad is None:
             # No existe: no llenamos el tipo (el usuario puede estar creando uno nuevo)
+            # Si el Tipo venía de un registro cargado antes, se limpia para no
+            # guardarlo por error con el ID nuevo
+            if self._tipo_cargado is not None and self.ui.lineTipoParcialidades.text() == self._tipo_cargado:
+                self.ui.lineTipoParcialidades.clear()
+            self._tipo_cargado = None
             self._actualizar_estado_boton_eliminar(None)
             return
 
@@ -114,12 +132,32 @@ class VentanaParcialidades(QWidget):
         self.ui.lineTipoParcialidades.blockSignals(True)
         self.ui.lineTipoParcialidades.setText(parcialidad.tipoparcia)
         self.ui.lineTipoParcialidades.blockSignals(False)
+        self._tipo_cargado = parcialidad.tipoparcia  # Registra el Tipo cargado
         self._actualizar_estado_boton_eliminar(parcialidad.idparcia)
 
 
     def on_nuevo(self):
         idParcialidades = self.ui.lineIDParcialidades.text()
         nombre = self.ui.lineTipoParcialidades.text()
+
+        id_num = self._id_actual()
+        if id_num is None:
+            QMessageBox.warning(self, "Validación", "Ingrese el ID de la parcialidad.")
+            self.ui.lineIDParcialidades.setFocus()
+            return
+
+        try:
+            if self.service.buscar_por_id(id_num) is not None:  # type: ignore[call-arg]
+                QMessageBox.warning(
+                    self, "Registro existente",
+                    f"Ya existe una parcialidad con el ID {id_num}. "
+                    f"Use Actualizar para modificarla."
+                )
+                return
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e))
+            return
+
         try:
             self.service.crear(idParcialidades, nombre) # type: ignore[call-arg]
         except ValueError as e:
@@ -190,13 +228,18 @@ class VentanaParcialidades(QWidget):
         if idParcialidades is None:
             QMessageBox.warning(self, "Validación", "Ingrese un ID numérico.")
             return
-        Parcialidades = self.service.buscar_por_id(idParcialidades)  # type: ignore[call-arg]
+        try:
+            Parcialidades = self.service.buscar_por_id(idParcialidades)  # type: ignore[call-arg]
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e))
+            return
         if Parcialidades is None:
             QMessageBox.information(self, "Buscar", "No se encontró la parcialidad.")
             self.ui.pparcialidadesEliminar.setEnabled(False)
             self.ui.pparcialidadesEliminar.setToolTip("")
             return
         self.ui.lineTipoParcialidades.setText(Parcialidades.tipoparcia)
+        self._tipo_cargado = Parcialidades.tipoparcia  # Registra el Tipo cargado
         self._actualizar_estado_boton_eliminar(Parcialidades.idparcia)
 
     def on_fila_seleccionada(self, index):
@@ -211,6 +254,7 @@ class VentanaParcialidades(QWidget):
         self.ui.lineIDParcialidades.blockSignals(False)
 
         self.ui.lineTipoParcialidades.setText(parcialidad.tipoparcia)
+        self._tipo_cargado = parcialidad.tipoparcia  # Registra el Tipo cargado
 
         self._actualizar_estado_boton_eliminar(parcialidad.idparcia)
 

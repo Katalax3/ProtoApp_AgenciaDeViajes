@@ -31,7 +31,7 @@ class ParcialidadesService(BaseService):
         if not tipoparcia:
             conn.rollback()
             raise ValueError("El tipoparcia de la parcialidad no puede estar vacío.")
-        if len(tipoparcia) > 100:
+        if len(tipoparcia) > 20:
             conn.rollback()
             raise ValueError("El tipoparcia es demasiado largo.")
         
