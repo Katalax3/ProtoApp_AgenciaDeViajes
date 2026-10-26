@@ -3,6 +3,7 @@ from psycopg import Cursor, Connection
 from src.app.services.base_service import BaseService, with_db 
 from src.app.dal import BaseDAL
 from src.app.models.Parcialidades import Parcialidades
+from src.app.repositories.repository_metadata import obtener_limites_columnas
 
 
 class ParcialidadesService(BaseService):
@@ -82,3 +83,6 @@ class ParcialidadesService(BaseService):
             conn.rollback()
             raise ValueError(f"No se pudo eliminar la parcialidad con id {idparcia}.")
         conn.commit()
+
+    def limites_columnas(self) -> dict[str, dict]:
+        return obtener_limites_columnas("parcialidades")

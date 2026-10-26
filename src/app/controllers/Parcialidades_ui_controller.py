@@ -3,6 +3,12 @@ from PySide6.QtCore import Qt
 from src.app.services import ParcialidadesService
 from src.app.ui import Ui_VentanaParcialidades
 from src.app.presenters.parcialidades_table_model import ParcialidadesTableModel
+from PySide6.QtCore import QTimer
+from PySide6.QtGui import QIntValidator
+
+# Fallback si la BD no responde o no hay permisos
+_FALLBACK_ID_DIGITS = 9
+_FALLBACK_TIPO_LEN = 50
 
 
 class VentanaParcialidades(QWidget):
@@ -10,8 +16,13 @@ class VentanaParcialidades(QWidget):
         super().__init__()
         self.ui = Ui_VentanaParcialidades()
         self.ui.setupUi(self)
-
         self.service: ParcialidadesService = Parcialidades_service
+
+        try:
+            self._limites = self.service.limites_columnas()
+        except Exception:
+            self._limites = {}
+        self._aplicar_limites_a_widgets()
 
         self.table_model = ParcialidadesTableModel(self)
         self.ui.vistaParcialidades.setModel(self.table_model)
@@ -32,7 +43,13 @@ class VentanaParcialidades(QWidget):
         self.ui.pparcialidadesEliminar.clicked.connect(self.on_eliminar)
         self.ui.pparcialidadesBuscar.clicked.connect(self.on_buscar)
 
-        self.ui.vistaParcialidades.doubleClicked.connect(self.on_fila_seleccionada)
+        self.ui.vistaParcialidades.clicked.connect(self.on_fila_seleccionada)
+
+        self._search_timer = QTimer(self)
+        self._search_timer.setSingleShot(True)
+        self._search_timer.setInterval(300)  # ms
+        self._search_timer.timeout.connect(self._busqueda_automatica)
+        self.ui.lineIDParcialidades.textChanged.connect(self._on_id_text_changed)
 
         self.ui.pparcialidadesEliminar.setEnabled(False)
 
@@ -72,6 +89,32 @@ class VentanaParcialidades(QWidget):
     def _id_actual(self):
         txt = self.ui.lineIDParcialidades.text().strip()
         return int(txt) if txt.isdigit() else None
+
+    def _on_id_text_changed(self, _text: str):
+        self._search_timer.start()  # reinicia el debounce
+
+    def _busqueda_automatica(self):
+        txt = self.ui.lineIDParcialidades.text().strip()
+        if not txt.isdigit():
+            self._actualizar_estado_boton_eliminar(None)
+            return
+
+        id_parcia = int(txt)
+        try:
+            parcialidad = self.service.buscar_por_id(id_parcia)  # type: ignore[call-arg]
+        except Exception:
+            return
+
+        if parcialidad is None:
+            # No existe: no llenamos el tipo (el usuario puede estar creando uno nuevo)
+            self._actualizar_estado_boton_eliminar(None)
+            return
+
+        # Existe: rellenamos automáticamente el campo "tipo"
+        self.ui.lineTipoParcialidades.blockSignals(True)
+        self.ui.lineTipoParcialidades.setText(parcialidad.tipoparcia)
+        self.ui.lineTipoParcialidades.blockSignals(False)
+        self._actualizar_estado_boton_eliminar(parcialidad.idparcia)
 
 
     def on_nuevo(self):
@@ -157,13 +200,31 @@ class VentanaParcialidades(QWidget):
         self._actualizar_estado_boton_eliminar(Parcialidades.idparcia)
 
     def on_fila_seleccionada(self, index):
-        Parcialidades = self.table_model.get_Parcialidades_at(index.row())
-        if not Parcialidades:
+        parcialidad = self.table_model.get_Parcialidades_at(index.row())
+        if not parcialidad:
             self.ui.pparcialidadesEliminar.setEnabled(False)
             self.ui.pparcialidadesEliminar.setToolTip("")
             return
 
-        self.ui.lineIDParcialidades.setText(str(Parcialidades.idparcia))
-        self.ui.lineTipoParcialidades.setText(Parcialidades.tipoparcia)
+        self.ui.lineIDParcialidades.blockSignals(True)
+        self.ui.lineIDParcialidades.setText(str(parcialidad.idparcia))
+        self.ui.lineIDParcialidades.blockSignals(False)
 
-        self._actualizar_estado_boton_eliminar(Parcialidades.idparcia)    
+        self.ui.lineTipoParcialidades.setText(parcialidad.tipoparcia)
+
+        self._actualizar_estado_boton_eliminar(parcialidad.idparcia)
+
+    def _aplicar_limites_a_widgets(self):
+        # --- ID (numeric(9,0)) ---
+        meta = self._limites.get("idparcia", {})
+        max_digits = meta.get("max_digits", _FALLBACK_ID_DIGITS)
+        max_value = meta.get("max_value", 10 ** max_digits - 1)
+        self.ui.lineIDParcialidades.setMaxLength(max_digits)
+        self.ui.lineIDParcialidades.setValidator(
+            QIntValidator(0, max_value, self)
+        )
+
+        # --- Tipo (varchar) ---
+        meta = self._limites.get("tipoparcia", {})
+        max_len = meta.get("max_length", _FALLBACK_TIPO_LEN)
+        self.ui.lineTipoParcialidades.setMaxLength(max_len)  
