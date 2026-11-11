@@ -11,3 +11,7 @@ wheels/
 
 # Enviroment Variables
 .env
+
+#Any Files
+desarrollo_template.py
+try_connection.py
