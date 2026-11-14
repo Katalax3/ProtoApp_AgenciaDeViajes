@@ -10,17 +10,6 @@ CREATE TABLE IF NOT EXISTS "forma_pago" (
 	PRIMARY KEY("id_forma_pago")
 );
 
-CREATE TABLE IF NOT EXISTS "cliente" (
-	"id_cliente" INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY,
-	"nombre" VARCHAR(30) NOT NULL,
-	"paterno" VARCHAR(30) NOT NULL,
-	"materno" VARCHAR(30),
-	"telefono" VARCHAR(13) UNIQUE,
-	"correo" VARCHAR(40) NOT NULL UNIQUE,
-	"contrasena" VARCHAR(255) NOT NULL,
-	PRIMARY KEY("id_cliente")
-);
-
 CREATE TABLE IF NOT EXISTS "titular" (
 	"id_titular" INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY,
 	"nombre" VARCHAR(30) NOT NULL,
@@ -71,17 +60,16 @@ CREATE TABLE IF NOT EXISTS "asiento" (
 	PRIMARY KEY("id_asiento")
 );
 
-CREATE TABLE IF NOT EXISTS "empleado" (
-	"id_empleado" INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY,
-	"id_agencia" INTEGER NOT NULL,
-	"matricula" VARCHAR(9) NOT NULL UNIQUE,
+CREATE TABLE IF NOT EXISTS "usuario" (
+	"id_usuario" INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY,
 	"nombre" VARCHAR(30) NOT NULL,
 	"paterno" VARCHAR(30) NOT NULL,
 	"materno" VARCHAR(30),
 	"telefono" VARCHAR(13) UNIQUE,
 	"correo" VARCHAR(40) NOT NULL UNIQUE,
-	"contrasena" VARCHAR(255) NOT NULL,
-	PRIMARY KEY("id_empleado")
+	"contrasena" VARCHAR(255) NOT NULL UNIQUE,
+	"tipo_usuario" VARCHAR(40) NOT NULL,
+	PRIMARY KEY("id_usuario")
 );
 
 CREATE TABLE IF NOT EXISTS "estado" (
@@ -121,6 +109,7 @@ CREATE TABLE IF NOT EXISTS "viaje" (
 	"id_ciudad_origen" INTEGER NOT NULL,
 	"fecha_salida" TIMESTAMP NOT NULL,
 	"fecha_llegada" TIMESTAMP NOT NULL,
+	"nombre" VARCHAR(50) NOT NULL,
 	"costo" NUMERIC(8,2) NOT NULL,
 	PRIMARY KEY("id_viaje"),
 	CONSTRAINT "ck_id_ciudad_destino_id_ciudad_origen" CHECK ("id_ciudad_origen" <> "id_ciudad_destino"),
@@ -140,7 +129,7 @@ CREATE TABLE IF NOT EXISTS "reserva" (
 	"id_agencia" INTEGER NOT NULL,
 	"id_cliente" INTEGER NOT NULL,
 	"fecha_reserva" TIMESTAMPTZ NOT NULL,
-	"id_estado_pago" INTEGER NOT NULL,
+	"id_estado_pago" INTEGER,
 	PRIMARY KEY("id_reserva"),
 	CONSTRAINT "reserva_unique_0" UNIQUE ("id_reserva", "id_viaje")
 );
@@ -220,6 +209,13 @@ CREATE TABLE IF NOT EXISTS "documento_identidad" (
 	CONSTRAINT "documento_identidad_unique_1" UNIQUE ("id_pasajero", "id_documento_identidad")
 );
 
+CREATE TABLE IF NOT EXISTS "empleado" (
+	"id_empleado" INTEGER NOT NULL,
+	"id_agencia" INTEGER NOT NULL,
+	"matricula" VARCHAR(9) NOT NULL UNIQUE,
+	PRIMARY KEY("id_empleado")
+);
+
 ALTER TABLE "parcialidad"
 ADD FOREIGN KEY("id_factura") REFERENCES "factura"("id_factura")
 ON UPDATE NO ACTION ON DELETE NO ACTION;
@@ -228,9 +224,6 @@ ADD FOREIGN KEY("id_linea") REFERENCES "linea"("id_linea")
 ON UPDATE NO ACTION ON DELETE NO ACTION;
 ALTER TABLE "asiento"
 ADD FOREIGN KEY("id_transporte") REFERENCES "medio_transporte"("id_transporte")
-ON UPDATE NO ACTION ON DELETE NO ACTION;
-ALTER TABLE "empleado"
-ADD FOREIGN KEY("id_agencia") REFERENCES "agencia"("id_agencia")
 ON UPDATE NO ACTION ON DELETE NO ACTION;
 ALTER TABLE "cuenta"
 ADD FOREIGN KEY("id_banco") REFERENCES "banco"("id_banco")
@@ -274,9 +267,6 @@ ON UPDATE NO ACTION ON DELETE NO ACTION;
 ALTER TABLE "documento_identidad"
 ADD FOREIGN KEY("id_pasajero") REFERENCES "pasajero"("id_pasajero")
 ON UPDATE NO ACTION ON DELETE NO ACTION;
-ALTER TABLE "reserva"
-ADD FOREIGN KEY("id_cliente") REFERENCES "cliente"("id_cliente")
-ON UPDATE NO ACTION ON DELETE NO ACTION;
 ALTER TABLE "factura"
 ADD FOREIGN KEY("id_reserva", "id_viaje") REFERENCES "reserva"("id_reserva", "id_viaje")
 ON UPDATE NO ACTION ON DELETE NO ACTION;
@@ -303,4 +293,13 @@ ADD FOREIGN KEY("id_pais") REFERENCES "pais"("id_pais")
 ON UPDATE NO ACTION ON DELETE NO ACTION;
 ALTER TABLE "documento_identidad"
 ADD FOREIGN KEY("id_pais_emision") REFERENCES "pais"("id_pais")
+ON UPDATE NO ACTION ON DELETE NO ACTION;
+ALTER TABLE "empleado"
+ADD FOREIGN KEY("id_empleado") REFERENCES "usuario"("id_usuario")
+ON UPDATE NO ACTION ON DELETE NO ACTION;
+ALTER TABLE "reserva"
+ADD FOREIGN KEY("id_cliente") REFERENCES "usuario"("id_usuario")
+ON UPDATE NO ACTION ON DELETE NO ACTION;
+ALTER TABLE "empleado"
+ADD FOREIGN KEY("id_agencia") REFERENCES "agencia"("id_agencia")
 ON UPDATE NO ACTION ON DELETE NO ACTION;
