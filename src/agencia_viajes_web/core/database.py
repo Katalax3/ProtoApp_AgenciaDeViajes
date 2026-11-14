@@ -1,7 +1,5 @@
 from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from psycopg.rows import dict_row
-from psycopg_pool import ConnectionPool
 from urllib.parse import quote_plus
 
 
@@ -21,5 +19,3 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env', extra="ignore")
 
 settings = Settings()
-
-pool = ConnectionPool(settings.database_url, kwargs={"row_factory":dict_row}, max_size=10, min_size=2)
