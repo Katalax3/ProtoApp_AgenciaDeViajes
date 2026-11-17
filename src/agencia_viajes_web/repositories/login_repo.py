@@ -11,7 +11,7 @@ class LoginRepo(BaseRepo):
     def validar_credenciales(self, datos: dict[str, Any]):
         try:
             with self.conn.cursor() as cur:
-                query=sql.SQL("SELECT tipo_usuario, contrasena FROM {tabla} WHERE correo=%s").format(tabla=sql.Identifier(cast(str, self.tabla)))
+                query=sql.SQL("SELECT nombre, paterno, tipo_usuario, contrasena FROM {tabla} WHERE correo=%s").format(tabla=sql.Identifier(cast(str, self.tabla)))
                 correo = datos.get("correo")
                 cur.execute(query, (correo, ))
                 registro = cur.fetchone()
@@ -23,10 +23,10 @@ class LoginRepo(BaseRepo):
 
                 contrasena_plana = registro_dict.get("contrasena")
                 
-                if not contrasena_plana or not self.__hash.verify_password(datos["contrasena"], registro_dict["contrasena"]):
+                if not contrasena_plana or not self.__hash.verify_password(datos["contrasena"], contrasena_plana):
                     raise ValueError(f"La contraseña es incorrecta")
 
-                return registro_dict["tipo_usuario"]
+                return registro_dict
 
         except ValueError:
             self.conn.rollback()

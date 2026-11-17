@@ -9,20 +9,19 @@ class CredencialesCreate(BaseModel):
     contrasena: str
 
 class CredencialesResponse(BaseModel):
-    correo: str
+    nombre: str
+    paterno: str
+    tipo_usuario: str
 
 router = APIRouter(prefix="/login", tags=["Login"])
 
 db_manager = Conexion()
 
-@router.post("/")
+@router.post("/", response_model=CredencialesResponse)
 def login(credenciales: CredencialesCreate, db: Connection = Depends(db_manager.get_db)):
     repo = LoginRepo(db)
     try:
-        tipo_usuario = repo.validar_credenciales(credenciales.model_dump())
-        return {
-            "mensaje": "Login exitoso",
-            "tipo_usuario": tipo_usuario
-        }
+        respuesta = repo.validar_credenciales(credenciales.model_dump())
+        return respuesta
     except ValueError as e:
         raise HTTPException(status_code=401, detail=str(e))
