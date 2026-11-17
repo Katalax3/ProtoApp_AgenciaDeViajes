@@ -69,7 +69,12 @@ CREATE TABLE IF NOT EXISTS "usuario" (
 	"correo" VARCHAR(40) NOT NULL UNIQUE,
 	"contrasena" VARCHAR(255) NOT NULL UNIQUE,
 	"tipo_usuario" VARCHAR(40) NOT NULL,
-	PRIMARY KEY("id_usuario")
+	"id_agencia" INTEGER,
+	"num_empleado" VARCHAR(9) UNIQUE,
+	PRIMARY KEY("id_usuario"),
+	CONSTRAINT ck_tipo_usuario CHECK ("tipo_usuario" IN ('Empleado', 'Cliente')),
+	CONSTRAINT ck_empleado_usuario CHECK (("tipo_usuario" = 'Empleado' AND "id_agencia" IS NOT NULL AND "num_empleado" IS NOT NULL) OR
+	"tipo_usuario" = 'Cliente' AND "id_agencia" IS NULL AND "num_empleado" IS NULL)
 );
 
 CREATE TABLE IF NOT EXISTS "estado" (
@@ -109,12 +114,13 @@ CREATE TABLE IF NOT EXISTS "viaje" (
 	"id_ciudad_origen" INTEGER NOT NULL,
 	"fecha_salida" TIMESTAMP NOT NULL,
 	"fecha_llegada" TIMESTAMP NOT NULL,
-	"nombre" VARCHAR(50) NOT NULL,
+	"nombre" VARCHAR(50) NOT NULL UNIQUE,
 	"costo" NUMERIC(8,2) NOT NULL,
 	PRIMARY KEY("id_viaje"),
 	CONSTRAINT "ck_id_ciudad_destino_id_ciudad_origen" CHECK ("id_ciudad_origen" <> "id_ciudad_destino"),
 	CONSTRAINT "ck_fecha_salida_fecha_llegada" CHECK ("fecha_salida" < "fecha_llegada"),
-	CONSTRAINT "ck_costo_no_cero" CHECK ("costo" > 0)
+	CONSTRAINT "ck_costo_no_cero" CHECK ("costo" > 0),
+	CONSTRAINT "ck_formato_nombre" CHECK ("nombre" ~ '^[A-ZÁÉÍÓÚÑ][a-zàéíóúñ]+-[A-ZÁÉÍÓÚÑ][a-zàéíóúñ]+$')
 );
 
 CREATE TABLE IF NOT EXISTS "agencia_viaje" (
@@ -184,6 +190,7 @@ CREATE TABLE IF NOT EXISTS "factura" (
 	"id_factura" INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY,
 	"id_reserva" INTEGER NOT NULL,
 	"id_viaje" INTEGER NOT NULL,
+	"folio" NUMERIC(36) NOT NULL,
 	"fecha_emision" TIMESTAMPTZ NOT NULL,
 	"total_factura" NUMERIC(8, 2) NOT NULL,
 	"metodo_pago" VARCHAR(3) NOT NULL,
@@ -195,7 +202,8 @@ CREATE TABLE IF NOT EXISTS "factura" (
 CREATE TABLE IF NOT EXISTS "estado_pago" (
 	"id_estado_pago" INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY,
 	"nombre" VARCHAR(40) NOT NULL UNIQUE,
-	PRIMARY KEY("id_estado_pago")
+	PRIMARY KEY("id_estado_pago"),
+	CONSTRAINT ck_estado CHECK ('nombre' IN ('Parcial', 'Liquidado'))
 );
 
 CREATE TABLE IF NOT EXISTS "documento_identidad" (
@@ -207,13 +215,6 @@ CREATE TABLE IF NOT EXISTS "documento_identidad" (
 	PRIMARY KEY("id_documento_identidad"),
 	CONSTRAINT "tipo_documento_identidad_unique_0" UNIQUE ("numero_documento", "tipo_documento", "id_pais_emision"),
 	CONSTRAINT "documento_identidad_unique_1" UNIQUE ("id_pasajero", "id_documento_identidad")
-);
-
-CREATE TABLE IF NOT EXISTS "empleado" (
-	"id_empleado" INTEGER NOT NULL,
-	"id_agencia" INTEGER NOT NULL,
-	"matricula" VARCHAR(9) NOT NULL UNIQUE,
-	PRIMARY KEY("id_empleado")
 );
 
 ALTER TABLE "parcialidad"
