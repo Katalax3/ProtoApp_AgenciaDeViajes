@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "rootDir": "./src/agencia_viajes_web/ts",
+    "outDir": "./src/agencia_viajes_web/static/js",
+    "target": "es2022",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true
+  }
+}

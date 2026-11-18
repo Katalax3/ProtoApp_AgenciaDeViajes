@@ -1,10 +1,24 @@
 {% extends 'base.html' %}
 {% block title %}Login{% endblock %}
-{% block header %}
-    <h1>Login</h1>
-{% endblock %}
 {% block main %}
-<label>Correo <input type="text" name="correo" id="txt_correo"></label>
-<label>Contraseña <input type="text" name="contrasena" id="txt_pass"></label>
-<button type="submit">Iniciar Sesión</button>
+<div>
+    <h1>Login</h1>
+    <form id="login-form" action="/login/" method="post">
+        <div>
+            <label>
+                <span>Correo</span>
+                <input type="email" name="correo" id="txt_correo" autofocus>
+            </label>
+        </div>
+        <div>
+            <label>
+                <span>Contraseña</span>
+                <input type="password" name="contrasena" id="txt_pass">
+            </label>
+        </div>
+        <button type="submit">Iniciar Sesión</button>
+    </form>
+    <p id="error-message"></p>
+</div>
+<script type="module" src="{{ url_for('static', path='js/login.js') }}"></script>
 {% endblock %}

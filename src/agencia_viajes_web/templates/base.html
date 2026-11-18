@@ -2,15 +2,18 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@anyblades/blades@3/css/blades.min.css"/>
+    {% block head %} 
+    {% endblock %}
     <title>{% block title %}{% endblock %}</title>
 </head>
-<body>
+<body class="{% block classbody %}{% endblock %}">
     <header>
         {% block header %}
         {% endblock %}
     </header>
-    <main>
+    <main class="container">
         {% block main %}
         {% endblock %}
     </main>

@@ -1,3 +1,4 @@
+from typing import Optional
 from agencia_viajes_web import Conexion
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -7,25 +8,25 @@ from agencia_viajes_web.repositories.usuario_repo import UsuarioRepo
 class UsuarioCreate(BaseModel):
     nombre: str
     paterno: str
-    materno: str
-    telefono: str
+    materno: Optional[str] = None
+    telefono: Optional[str] = None
     correo: str
     contrasena: str
     tipo_usuario: str
-    id_agencia: int
-    num_empleado: str
+    id_agencia: Optional[int] = None
+    num_empleado: Optional[str] = None
 
 
 class UsuarioRespose(BaseModel):
     id_usuario: int
     nombre: str
     paterno: str
-    materno: str
-    telefono: str
+    materno: Optional[str] = None
+    telefono: Optional[str] = None
     correo: str
     tipo_usuario: str
-    id_agencia: int
-    num_empleado: str
+    id_agencia: Optional[int] = None
+    num_empleado: Optional[str] = None
 
 router = APIRouter(prefix="/usuario", tags=["Usuario"])
 db_manager = Conexion()
