@@ -1,10 +1,14 @@
-export interface CredencialesResponse {
-    nombre: string
-    paterno: string
-    tipo_usuario: string
+export interface CredencialesCreate {
+    correo: string;
+    contrasena: string;
 }
 
-export interface ErrorResponse {
-    message: string
-    detail: string
+export interface CredencialesResponse {
+    nombre: string;
+    paterno: string;
+    tipo_usuario: string;
+}
+
+export interface FastAPIError {
+    detail?: string;
 }
