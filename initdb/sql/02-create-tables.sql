@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS "usuario" (
 	"id_agencia" INTEGER,
 	"num_empleado" VARCHAR(9) UNIQUE,
 	PRIMARY KEY("id_usuario"),
-	CONSTRAINT ck_tipo_usuario CHECK ("tipo_usuario" IN ('Empleado', 'Cliente')),
+	CONSTRAINT ck_tipo_usuario CHECK ("tipo_usuario" IN ('Empleado', 'Cliente', 'DBA')),
 	CONSTRAINT ck_empleado_usuario CHECK (("tipo_usuario" = 'Empleado' AND "id_agencia" IS NOT NULL AND "num_empleado" IS NOT NULL) OR
 	"tipo_usuario" = 'Cliente' AND "id_agencia" IS NULL AND "num_empleado" IS NULL)
 );
@@ -295,12 +295,6 @@ ON UPDATE NO ACTION ON DELETE NO ACTION;
 ALTER TABLE "documento_identidad"
 ADD FOREIGN KEY("id_pais_emision") REFERENCES "pais"("id_pais")
 ON UPDATE NO ACTION ON DELETE NO ACTION;
-ALTER TABLE "empleado"
-ADD FOREIGN KEY("id_empleado") REFERENCES "usuario"("id_usuario")
-ON UPDATE NO ACTION ON DELETE NO ACTION;
 ALTER TABLE "reserva"
 ADD FOREIGN KEY("id_cliente") REFERENCES "usuario"("id_usuario")
-ON UPDATE NO ACTION ON DELETE NO ACTION;
-ALTER TABLE "empleado"
-ADD FOREIGN KEY("id_agencia") REFERENCES "agencia"("id_agencia")
 ON UPDATE NO ACTION ON DELETE NO ACTION;
