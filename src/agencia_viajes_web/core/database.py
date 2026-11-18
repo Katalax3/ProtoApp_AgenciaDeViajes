@@ -1,21 +1,15 @@
 from pydantic import computed_field
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from urllib.parse import quote_plus
+from .config import settings
 
-
-class Settings(BaseSettings):
-    db_host: str = "localhost"
-    db_name: str = "postgres"
-    db_user: str = "postgres"
-    db_password: str = "password"
-    db_port: str = "5432"
+class Database():
+    def __init__(self) -> None:
+        self.__settings = settings
 
     @computed_field
     @property
     def database_url(self) -> str:
-        encoded_pass = quote_plus(self.db_password)
-        return f"postgresql://{self.db_user}:{encoded_pass}@{self.db_host}:{self.db_port}/{self.db_name}"
-    
-    model_config = SettingsConfigDict(env_file='.env', extra="ignore")
+        encoded_pass = quote_plus(settings.db_password)
+        return f"postgresql://{settings.db_user}:{encoded_pass}@{settings.db_host}:{settings.db_port}/{settings.db_name}"
 
-settings = Settings()
+database = Database()

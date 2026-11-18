@@ -1,12 +1,13 @@
 from psycopg_pool import ConnectionPool
 from psycopg.rows import dict_row
 from psycopg import errors
-from .database import settings
+from .database import database
 from fastapi import HTTPException
+
 
 class Conexion():
     def __init__(self) -> None:
-        self.__pool = ConnectionPool(settings.database_url, kwargs={"row_factory":dict_row}, max_size=10, min_size=2)
+        self.__pool = ConnectionPool(database.database_url, kwargs={"row_factory":dict_row}, max_size=10, min_size=2)
 
     def obtener_conexion(self):
         try:
