@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS "usuario" (
 	PRIMARY KEY("id_usuario"),
 	CONSTRAINT ck_tipo_usuario CHECK ("tipo_usuario" IN ('Empleado', 'Cliente', 'DBA')),
 	CONSTRAINT ck_empleado_usuario CHECK (("tipo_usuario" = 'Empleado' AND "id_agencia" IS NOT NULL AND "num_empleado" IS NOT NULL) OR
-	"tipo_usuario" = 'Cliente' AND "id_agencia" IS NULL AND "num_empleado" IS NULL)
+	"tipo_usuario" IN ('Cliente', 'DBA') AND "id_agencia" IS NULL AND "num_empleado" IS NULL)
 );
 
 CREATE TABLE IF NOT EXISTS "estado" (
