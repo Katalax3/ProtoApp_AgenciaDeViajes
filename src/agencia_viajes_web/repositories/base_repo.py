@@ -51,7 +51,7 @@ class BaseRepo:
 
                 query = sql.SQL("UPDATE {tabla} SET {sets} WHERE {id_tabla} = %s RETURNING *").format(tabla=sql.Identifier(self.tabla), sets=sets, id_tabla=sql.Identifier(id_tabla))
 
-                params = list(datos.values()) + [id]
+                params = list(datos.values()) + [id_val]
 
                 cur.execute(query, params)
                 self.conn.commit()
@@ -90,3 +90,22 @@ class BaseRepo:
                 print(f"Ocurrio un error en la base de datos")
                 print(f"Codigo de error: {e}")
                 self.conn.rollback()
+
+    def tiene_registros_hijos(self, id_val: int, id_tabla: str, tabla_hija: str, fk_columna: str) -> bool:
+        try:
+            with self.conn.cursor() as cur:
+                query = sql.SQL("SELECT COUNT(*) FROM {tabla_hija} WHERE {fk_columna} = %s").format(
+                    tabla_hija=sql.Identifier(tabla_hija),
+                    fk_columna=sql.Identifier(fk_columna)
+                )
+                cur.execute(query, (id_val,))
+                resultado = cur.fetchone()
+                
+                if not resultado:
+                    return False
+                
+                conteo = list(resultado.values())[0] if isinstance(resultado, dict) else resultado[0]
+                return conteo > 0
+        except errors.Error as e:
+            self.conn.rollback()
+            return False

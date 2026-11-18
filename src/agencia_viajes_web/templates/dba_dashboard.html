@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Administrador de Base de Datos</title>
+    <link rel="stylesheet" href="/static/css/dba_dashboard.css">
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>Panel DBA</h2>
+                <span class="badge">Administrador</span>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-btn active" data-table="pais">País</button>
+                <button class="nav-btn" data-table="parcialidad">Parcialidad</button>
+                <button class="nav-btn" data-table="banco">Banco</button>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="/login/logout" class="btn-logout">Cerrar Sesión</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="content-header">
+                <h1 id="table-title">Gestión de Países</h1>
+                <p id="table-subtitle">Administra los registros de la tabla seleccionada</p>
+            </header>
+
+            <section class="action-bar">
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="Buscar por término...">
+                    <button id="search-btn" class="btn-secondary" type="button">Buscar</button>
+                </div>
+                <button id="open-create-modal" class="btn-primary" type="button">+ Nuevo Registro</button>
+            </section>
+
+            <section class="table-container">
+                <table id="data-table">
+                    <thead>
+                        <tr id="table-head-row"></tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal para Crear / Actualizar -->
+    <div id="record-modal" class="modal" hidden>
+        <div class="modal-content">
+            <h2 id="modal-title">Nuevo Registro</h2>
+            <form id="record-form" novalidate>
+                <div id="form-fields" class="form-fields-container"></div>
+                <div class="modal-actions">
+                    <button type="button" id="close-modal" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="/static/js/dba_dashboard.js"></script>
+</body>
+</html>
