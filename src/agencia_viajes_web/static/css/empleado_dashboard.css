@@ -1,0 +1,21 @@
+@import url('dba_dashboard.css');
+
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.25rem;
+}
+
+.viaje-card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.viaje-card h3 { font-size: 1.05rem; font-weight: 600; }
+.viaje-info { font-size: 0.85rem; color: var(--text-secondary); display: flex; justify-content: space-between; }
+.viaje-costo { font-size: 1.1rem; font-weight: 600; color: var(--accent); margin-top: 0.5rem; }

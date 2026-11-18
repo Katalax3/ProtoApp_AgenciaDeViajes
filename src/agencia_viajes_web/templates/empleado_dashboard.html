@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Empleado</title>
+    <link rel="stylesheet" href="/static/css/empleado_dashboard.css">
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>Panel Empleado</h2>
+                <span class="badge">Gestión de Viajes</span>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-btn active" data-view="disponibles">Viajes Disponibles</button>
+                <button class="nav-btn" data-view="crud">Organizador de Viajes</button>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="/login/logout" class="btn-logout">Cerrar Sesión</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="content-header">
+                <h1 id="view-title">Viajes Disponibles</h1>
+                <p id="view-subtitle">Consulta la cartelera de viajes activos</p>
+            </header>
+
+            <section id="section-disponibles" class="dashboard-section">
+                <div class="cards-grid" id="viajes-grid"></div>
+            </section>
+
+            <section id="section-crud" class="dashboard-section" hidden>
+                <div class="action-bar">
+                    <button id="open-viaje-modal" class="btn-primary" type="button">+ Registrar Nuevo Viaje</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Transporte</th>
+                                <th>Origen</th>
+                                <th>Destino</th>
+                                <th>Salida</th>
+                                <th>Costo</th>
+                                <th style="text-align: right;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="viajes-tbody"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="viaje-modal" class="modal" hidden>
+        <div class="modal-content">
+            <h2 id="viaje-modal-title">Registrar Viaje</h2>
+            <form id="viaje-form" class="form-fields-container" novalidate>
+                <div>
+                    <label>Nombre del Viaje</label>
+                    <input type="text" name="nombre" maxlength="50" required placeholder="Ej. Tour por la Costa" tabindex="1">
+                </div>
+                <div>
+                    <label>ID Transporte</label>
+                    <input type="number" name="id_transporte" min="1" required placeholder="1" tabindex="2">
+                </div>
+                <div>
+                    <label>Ciudad Origen (ID)</label>
+                    <input type="number" name="id_ciudad_origen" min="1" required placeholder="1" tabindex="3">
+                </div>
+                <div>
+                    <label>Ciudad Destino (ID)</label>
+                    <input type="number" name="id_ciudad_destino" min="1" required placeholder="2" tabindex="4">
+                </div>
+                <div>
+                    <label>Fecha Salida</label>
+                    <input type="datetime-local" name="fecha_salida" required tabindex="5">
+                </div>
+                <div>
+                    <label>Fecha Llegada</label>
+                    <input type="datetime-local" name="fecha_llegada" required tabindex="6">
+                </div>
+                <div>
+                    <label>Costo ($)</label>
+                    <input type="number" step="0.01" min="0" max="999999.99" name="costo" required placeholder="1500.00" tabindex="7">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="close-viaje-modal" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Viaje</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="/static/js/empleado_dashboard.js"></script>
+</body>
+</html>
