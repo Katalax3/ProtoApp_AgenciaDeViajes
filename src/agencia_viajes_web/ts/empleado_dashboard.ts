@@ -16,6 +16,49 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let editingViajeId: number | null = null;
     let cachedViajes: any[] = [];
+    const renderViajesDisponibles = (viajes: any[]) => {
+        if (!viajes.length) {
+            viajesGrid.innerHTML = `<p style="color: var(--text-secondary);">No se encontraron viajes disponibles.</p>`;
+            return;
+        }
+
+        viajesGrid.innerHTML = viajes.map(v => {
+            const nombreViaje = safe(v.nombre_viaje, "Sin nombre");
+            const origenNombre = safe(v.nombre_ciudad_origen, "N/A");
+            const destinoNombre = safe(v.nombre_ciudad_destino, "N/A");
+            const transporteNombre = safe(v.nombre_transporte, "N/A");
+            const salida = formatearFecha(v.fecha_salida);
+            const llegada = formatearFecha(v.fecha_llegada);
+            const costo = safe(v.costo, "0");
+
+            return `
+                <div class="viaje-card">
+                    <h3>${nombreViaje}</h3>
+                    <div class="viaje-info">
+                        <span>Origen: ${origenNombre}</span>
+                        <span>Destino: ${destinoNombre}</span>
+                    </div>
+                    <div class="viaje-info">
+                        <span>Transporte: ${transporteNombre}</span>
+                    </div>
+                    <div class="viaje-info">
+                        <span>Salida: ${salida}</span>
+                    </div>
+                    <div class="viaje-info">
+                        <span>Llegada: ${llegada}</span>
+                    </div>
+                    <div class="viaje-costo">$${costo}</div>
+                    
+                    <!-- NUEVO BOTÓN PARA DESCARGAR PDF -->
+                    <div style="margin-top: 1rem; text-align: right;">
+                        <a href="/empleado/api/viajes/${v.id_viaje}/pdf" target="_blank" class="btn-secondary" style="text-decoration: none; padding: 0.4rem 0.8rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 5px;">
+                            📄 Descargar PDF
+                        </a>
+                    </div>
+                </div>
+            `;
+        }).join("");
+    };
 
     const cambiarVista = (vista: string) => {
         if (vista === "disponibles") {
