@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Empleado</title>
     <link rel="stylesheet" href="/static/css/empleado_dashboard.css">
+    <style>
+        .table-container table { width: 100%; table-layout: auto; border-collapse: collapse; }
+        .table-container th, .table-container td { padding: 0.75rem; white-space: nowrap; border-bottom: 1px solid var(--border-color, #333); }
+        select, input[type="text"].search-input { width: 100%; padding: 0.5rem; border-radius: 4px; background-color: var(--bg-color, #1a1a1a); color: white; border: 1px solid #444; }
+        
+        /* Estilos específicos para las barras de búsqueda */
+        .search-bar-container { margin-bottom: 1rem; display: flex; gap: 1rem; }
+        .search-input { max-width: 350px; }
+        .action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem; }
+    </style>
 </head>
 <body>
     <div class="app-layout">
@@ -29,24 +39,34 @@
             </header>
 
             <section id="section-disponibles" class="dashboard-section">
+                <!-- BUSCADOR DISPONIBLES -->
+                <div class="search-bar-container">
+                    <input type="text" id="search-disponibles" class="search-input" placeholder="Buscar por nombre del viaje...">
+                </div>
                 <div class="cards-grid" id="viajes-grid"></div>
             </section>
 
             <section id="section-crud" class="dashboard-section" hidden>
                 <div class="action-bar">
                     <button id="open-viaje-modal" class="btn-primary" type="button">+ Registrar Nuevo Viaje</button>
+                    <!-- BUSCADOR CRUD -->
+                    <input type="text" id="search-crud" class="search-input" placeholder="Buscar por ID o nombre del viaje...">
                 </div>
                 <div class="table-container">
                     <table>
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Nombre</th>
-                                <th>Transporte</th>
-                                <th>Origen</th>
-                                <th>Destino</th>
-                                <th>Salida</th>
-                                <th>Costo</th>
+                                <th>id_viaje</th>
+                                <th>nombre_viaje</th>
+                                <th>id_transporte</th>
+                                <th>nombre_transporte</th>
+                                <th>id_ciudad_origen</th>
+                                <th>nombre_ciudad_origen</th>
+                                <th>id_ciudad_destino</th>
+                                <th>nombre_ciudad_destino</th>
+                                <th>fecha_salida</th>
+                                <th>fecha_llegada</th>
+                                <th>costo</th>
                                 <th style="text-align: right;">Acciones</th>
                             </tr>
                         </thead>
@@ -63,19 +83,25 @@
             <form id="viaje-form" class="form-fields-container" novalidate>
                 <div>
                     <label>Nombre del Viaje</label>
-                    <input type="text" name="nombre" maxlength="50" required placeholder="Ej. Tour por la Costa" tabindex="1">
+                    <input type="text" name="nombre" maxlength="50" required placeholder="Ej. Torreon-Acapulco" tabindex="1">
                 </div>
                 <div>
-                    <label>ID Transporte</label>
-                    <input type="number" name="id_transporte" min="1" required placeholder="1" tabindex="2">
+                    <label>Transporte</label>
+                    <select name="id_transporte" required tabindex="2">
+                        <option value="">Cargando transportes...</option>
+                    </select>
                 </div>
                 <div>
-                    <label>Ciudad Origen (ID)</label>
-                    <input type="number" name="id_ciudad_origen" min="1" required placeholder="1" tabindex="3">
+                    <label>Ciudad Origen</label>
+                    <select name="id_ciudad_origen" required tabindex="3">
+                        <option value="">Cargando ciudades...</option>
+                    </select>
                 </div>
                 <div>
-                    <label>Ciudad Destino (ID)</label>
-                    <input type="number" name="id_ciudad_destino" min="1" required placeholder="2" tabindex="4">
+                    <label>Ciudad Destino</label>
+                    <select name="id_ciudad_destino" required tabindex="4">
+                        <option value="">Cargando ciudades...</option>
+                    </select>
                 </div>
                 <div>
                     <label>Fecha Salida</label>
