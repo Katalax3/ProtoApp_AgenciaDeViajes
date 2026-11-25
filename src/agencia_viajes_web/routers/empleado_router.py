@@ -52,7 +52,16 @@ class TransporteOut(BaseModel):
 
 @router.get("/dashboard", response_class=HTMLResponse)
 def empleado_dashboard(request: Request):
-    return templates.TemplateResponse(request, "empleado_dashboard.html")
+    usuario_sesion = request.session.get("usuario", {})
+    nombre_completo = f"{usuario_sesion.get('nombre', '')} {usuario_sesion.get('paterno', '')}".strip()
+    if not nombre_completo:
+        nombre_completo = "Empleado"
+        
+    return templates.TemplateResponse(
+        request, 
+        "empleado_dashboard.html", 
+        {"usuario_nombre": nombre_completo}
+    )
 
 @router.get("/api/viajes", response_model=list[ViajeDetalleOut])
 def listar_viajes(db: Connection = Depends(db_manager.get_db)):

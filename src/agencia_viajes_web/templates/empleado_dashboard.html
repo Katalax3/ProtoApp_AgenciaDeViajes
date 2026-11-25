@@ -73,7 +73,12 @@
                 <button class="nav-btn" data-view="venta">Venta de Boletos</button>
             </nav>
             <div class="sidebar-footer">
-                <a href="/login/logout" class="btn-logout">Cerrar Sesión</a>
+                <!-- NUEVO: Mostrar nombre del usuario -->
+                <div style="padding: 1rem 0; color: var(--text-secondary); font-size: 0.9rem; border-top: 1px solid #333; margin-top: auto;">
+                    Conectado como:<br>
+                    <strong style="color: var(--text-primary); font-size: 1rem;">{{ usuario_nombre }}</strong>
+                </div>
+                <a href="/login/logout" class="btn-logout" style="margin-top: 0.5rem; display: block;">Cerrar Sesión</a>
             </div>
         </aside>
 

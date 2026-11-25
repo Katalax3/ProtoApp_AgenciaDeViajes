@@ -31,7 +31,16 @@ TABLAS_CONFIG = {
 
 @router.get("/dashboard", response_class=HTMLResponse)
 def dba_dashboard(request: Request):
-    return templates.TemplateResponse(request, "dba_dashboard.html")
+    usuario_sesion = request.session.get("usuario", {})
+    nombre_completo = f"{usuario_sesion.get('nombre', '')} {usuario_sesion.get('paterno', '')}".strip()
+    if not nombre_completo:
+        nombre_completo = "Administrador"
+        
+    return templates.TemplateResponse(
+        request, 
+        "dba_dashboard.html", 
+        {"usuario_nombre": nombre_completo}
+    )
 
 @router.get("/api/{tabla}")
 def obtener_registros(tabla: str, db: Connection = Depends(db_manager.get_db)):
