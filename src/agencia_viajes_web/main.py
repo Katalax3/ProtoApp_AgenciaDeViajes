@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from agencia_viajes_web.core.dependencies import NoAutenticadoVista
-from .routers import login_router, usuario_router, viaje_router, empleado_router, dba_router
+from .routers import login_router, usuario_router, viaje_router, empleado_router, dba_router, venta_router
 from .core.config import settings
 from .core.templates import templates
 
@@ -16,6 +16,7 @@ app.include_router(usuario_router.router)
 app.include_router(viaje_router.router)
 app.include_router(empleado_router.router)
 app.include_router(dba_router.router)
+app.include_router(venta_router.router)
 
 BASE_DIR = Path(__file__).resolve().parent
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")

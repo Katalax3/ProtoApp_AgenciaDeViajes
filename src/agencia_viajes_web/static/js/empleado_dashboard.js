@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const navBtns = document.querySelectorAll(".nav-btn");
     const sectionDisponibles = document.getElementById("section-disponibles");
     const sectionCrud = document.getElementById("section-crud");
+    const sectionVenta = document.getElementById("section-venta");
     const viewTitle = document.getElementById("view-title");
     const viewSubtitle = document.getElementById("view-subtitle");
     const viajesGrid = document.getElementById("viajes-grid");
@@ -161,19 +162,23 @@ document.addEventListener("DOMContentLoaded", () => {
     searchDisponiblesInput.addEventListener("input", filtrarDisponibles);
     searchCrudInput.addEventListener("input", filtrarCrud);
     const cambiarVista = (vista) => {
+        sectionDisponibles.hidden = vista !== "disponibles";
+        sectionCrud.hidden = vista !== "crud";
+        sectionVenta.hidden = vista !== "venta";
         if (vista === "disponibles") {
-            sectionDisponibles.hidden = false;
-            sectionCrud.hidden = true;
             viewTitle.textContent = "Viajes Disponibles";
             viewSubtitle.textContent = "Consulta la cartelera de viajes activos";
         }
-        else {
-            sectionDisponibles.hidden = true;
-            sectionCrud.hidden = false;
+        else if (vista === "crud") {
             viewTitle.textContent = "Organizador de Viajes";
             viewSubtitle.textContent = "Administra, crea, actualiza o elimina viajes";
         }
-        fetchViajes(); // Refrescar datos al cambiar de vista
+        else {
+            viewTitle.textContent = "Venta de Boletos";
+            viewSubtitle.textContent = "Registra la venta de un boleto para un cliente";
+        }
+        if (vista !== "venta")
+            fetchViajes(); // Refrescar datos al cambiar de vista
     };
     navBtns.forEach(btn => {
         btn.addEventListener("click", () => {

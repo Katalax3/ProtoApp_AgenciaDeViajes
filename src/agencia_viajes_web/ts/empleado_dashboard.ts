@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const navBtns = document.querySelectorAll<HTMLButtonElement>(".nav-btn");
     const sectionDisponibles = document.getElementById("section-disponibles") as HTMLElement;
     const sectionCrud = document.getElementById("section-crud") as HTMLElement;
+    const sectionVenta = document.getElementById("section-venta") as HTMLElement;
     const viewTitle = document.getElementById("view-title") as HTMLHeadingElement;
     const viewSubtitle = document.getElementById("view-subtitle") as HTMLParagraphElement;
 
@@ -183,18 +184,21 @@ document.addEventListener("DOMContentLoaded", () => {
     searchCrudInput.addEventListener("input", filtrarCrud);
 
     const cambiarVista = (vista: string) => {
+        sectionDisponibles.hidden = vista !== "disponibles";
+        sectionCrud.hidden = vista !== "crud";
+        sectionVenta.hidden = vista !== "venta";
+
         if (vista === "disponibles") {
-            sectionDisponibles.hidden = false;
-            sectionCrud.hidden = true;
             viewTitle.textContent = "Viajes Disponibles";
             viewSubtitle.textContent = "Consulta la cartelera de viajes activos";
-        } else {
-            sectionDisponibles.hidden = true;
-            sectionCrud.hidden = false;
+        } else if (vista === "crud") {
             viewTitle.textContent = "Organizador de Viajes";
             viewSubtitle.textContent = "Administra, crea, actualiza o elimina viajes";
+        } else {
+            viewTitle.textContent = "Venta de Boletos";
+            viewSubtitle.textContent = "Registra la venta de un boleto para un cliente";
         }
-        fetchViajes(); // Refrescar datos al cambiar de vista
+        if (vista !== "venta") fetchViajes(); // Refrescar datos al cambiar de vista
     };
 
     navBtns.forEach(btn => {
