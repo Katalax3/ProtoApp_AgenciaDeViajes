@@ -47,6 +47,16 @@
         #section-venta .venta-boleto { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1rem; display: grid; gap: 0.35rem; margin-top: 1.25rem; max-width: 520px; }
         #section-venta .venta-boleto[hidden] { display: none; }
         #section-venta .venta-boleto h3 { font-size: 0.95rem; margin-bottom: 0.25rem; }
+        #section-venta .venta-compra { grid-template-columns: minmax(210px, 420px); }
+        #section-venta .venta-stepper { display: flex; align-items: center; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 999px; overflow: hidden; }
+        #section-venta .venta-stepper button { background: transparent; border: none; color: var(--text-primary); font-size: 1.3rem; width: 2.75rem; padding: 0.45rem 0; cursor: pointer; }
+        #section-venta .venta-stepper button:hover { background: var(--bg-surface-hover); }
+        #section-venta .venta-stepper input { border: none; background: transparent; text-align: center; padding: 0.65rem 0; border-radius: 0; }
+        #section-venta .venta-pasajeros { display: grid; gap: 1rem; margin-top: 1.25rem; }
+        #section-venta .venta-pasajero { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1rem; }
+        #section-venta .venta-pasajero h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.75rem; }
+        #section-venta .venta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1rem; }
+        #section-venta .venta-precio small { display: block; color: var(--text-secondary); font-size: 0.75rem; font-weight: 400; }
         #section-venta .venta-autocomplete { position: relative; }
         #section-venta .venta-sug { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20; list-style: none; margin: 0; padding: 0.25rem; max-height: 240px; overflow-y: auto; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); }
         #section-venta .venta-sug[hidden] { display: none; }
@@ -73,12 +83,7 @@
                 <button class="nav-btn" data-view="venta">Venta de Boletos</button>
             </nav>
             <div class="sidebar-footer">
-                <!-- NUEVO: Mostrar nombre del usuario -->
-                <div style="padding: 1rem 0; color: var(--text-secondary); font-size: 0.9rem; border-top: 1px solid #333; margin-top: auto;">
-                    Conectado como:<br>
-                    <strong style="color: var(--text-primary); font-size: 1rem;">{{ usuario_nombre }}</strong>
-                </div>
-                <a href="/login/logout" class="btn-logout" style="margin-top: 0.5rem; display: block;">Cerrar Sesión</a>
+                <a href="/login/logout" class="btn-logout">Cerrar Sesión</a>
             </div>
         </aside>
 
@@ -144,6 +149,14 @@
                         <label for="venta-fecha">Salida</label>
                         <input id="venta-fecha" type="date">
                     </div>
+                    <div class="venta-campo">
+                        <label for="venta-num-pasajeros">Pasajeros</label>
+                        <div class="venta-stepper">
+                            <button type="button" id="venta-menos" aria-label="Quitar pasajero">&minus;</button>
+                            <input id="venta-num-pasajeros" type="text" value="1" readonly>
+                            <button type="button" id="venta-mas" aria-label="Agregar pasajero">+</button>
+                        </div>
+                    </div>
                 </div>
 
                 <section class="venta-lista" aria-live="polite">
@@ -159,27 +172,9 @@
                             <ul id="venta-sugerencias" class="venta-sug" hidden></ul>
                         </div>
                     </div>
-                    <div class="venta-campo">
-                        <label for="venta-asiento">Asiento</label>
-                        <select id="venta-asiento" disabled><option value="">Selecciona un viaje</option></select>
-                    </div>
-                    <div class="venta-campo">
-                        <label for="venta-pais">País del documento</label>
-                        <select id="venta-pais"><option value="">Cargando…</option></select>
-                    </div>
-                    <div class="venta-campo">
-                        <label for="venta-tipo-doc">Tipo de documento</label>
-                        <select id="venta-tipo-doc">
-                            <option value="INE">INE</option>
-                            <option value="Pasaporte">Pasaporte</option>
-                            <option value="Licencia">Licencia de conducir</option>
-                        </select>
-                    </div>
-                    <div class="venta-campo">
-                        <label for="venta-num-doc">No. de documento</label>
-                        <input id="venta-num-doc" type="text" maxlength="18" autocomplete="off">
-                    </div>
                 </div>
+
+                <div id="venta-pasajeros" class="venta-pasajeros"></div>
 
                 <div id="venta-msg" class="venta-msg" role="status"></div>
 
@@ -239,6 +234,6 @@
     </div>
 
     <script type="module" src="/static/js/empleado_dashboard.js"></script>
-    <script type="module" src="/static/js/venta_boletos.js"></script>
+    <script type="module" src="/static/js/venta_boletos.js?v=20261126"></script>
 </body>
 </html>

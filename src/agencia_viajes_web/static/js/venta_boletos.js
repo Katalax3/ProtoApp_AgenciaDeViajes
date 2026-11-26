@@ -1,4 +1,6 @@
 const BASE = "/empleado/venta/api";
+const MAX_PASAJEROS = 10;
+const nuevoPasajero = () => ({ nombre: "", paterno: "", materno: "", asiento: "", pais: "", tipo: "INE", numDoc: "" });
 document.addEventListener("DOMContentLoaded", () => {
     const $ = (id) => document.getElementById(id);
     const fechaHoyEl = $("venta-fecha-hoy");
@@ -8,11 +10,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const origenSel = $("venta-origen");
     const destinoSel = $("venta-destino");
     const fechaInput = $("venta-fecha");
+    const numPasajerosInput = $("venta-num-pasajeros");
+    const btnMenos = $("venta-menos");
+    const btnMas = $("venta-mas");
     const viajesDiv = $("venta-viajes");
-    const asientoSel = $("venta-asiento");
-    const paisSel = $("venta-pais");
-    const tipoDocSel = $("venta-tipo-doc");
-    const numDocInput = $("venta-num-doc");
+    const pasajerosDiv = $("venta-pasajeros");
     const msgEl = $("venta-msg");
     const btnVender = $("venta-btn-vender"); // por ahora solo de adorno (después llevará al pago)
     const btnDescargar = $("venta-btn-descargar");
@@ -24,6 +26,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let viajeSel = null;
     let asientos = [];
     let clienteId = null;
+    let pasajeros = [nuevoPasajero()];
+    let paisesHtml = '<option value="">Selecciona…</option>';
     const pad = (n) => String(n).padStart(2, "0");
     // Fecha del sistema operativo del equipo
     const hoyISO = () => {
@@ -47,40 +51,66 @@ document.addEventListener("DOMContentLoaded", () => {
         msgEl.className = "venta-msg " + tipo;
     };
     const pedir = async (url, init) => {
+        const ruta = new URL(url, window.location.href).pathname;
         const res = await fetch(url, init);
+        // Si la sesión venció, el servidor redirige al login y regresa HTML en lugar de JSON
+        if (res.redirected || (res.ok && !(res.headers.get("content-type") || "").includes("json"))) {
+            throw new Error("tu sesión venció, vuelve a iniciar sesión");
+        }
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
-            throw new Error(typeof err.detail === "string" ? err.detail : "Ocurrió un error en el servidor.");
+            throw new Error(typeof err.detail === "string" ? err.detail : `error ${res.status} en ${ruta}`);
         }
         return res.json();
     };
     // La fecha de salida no puede ser menor a la fecha de hoy del sistema
     const fechaValida = () => fechaInput.value !== "" && fechaInput.value >= hoyISO();
     // ---------- Calendario (se abre al dar clic en cualquier parte del campo) ----------
-    const abrirCalendario = () => {
+    fechaInput.addEventListener("click", () => {
         try {
             fechaInput.showPicker();
         }
         catch { /* el navegador no lo soporta: queda el icono normal */ }
-    };
-    fechaInput.addEventListener("click", abrirCalendario);
-    // ---------- Catálogos ----------
+    });
+    // ---------- Catálogos (cada uno carga por separado: si uno falla, los demás siguen) ----------
+    let ciudadesListas = false;
     const cargarCatalogos = async () => {
-        try {
-            const [ctx, ciudades, paises] = await Promise.all([
-                pedir(`${BASE}/contexto`),
-                pedir("/empleado/api/ciudades"),
-                pedir(`${BASE}/paises`),
-            ]);
-            atiendeEl.textContent = ctx.atiende;
-            const opciones = ciudades.map(c => `<option value="${c.id_ciudad}">${esc(c.nombre)}</option>`).join("");
+        const [ctx, ciudades, paises] = await Promise.allSettled([
+            pedir(`${BASE}/contexto`),
+            pedir("/empleado/api/ciudades"),
+            pedir(`${BASE}/paises`),
+        ]);
+        const fallos = [];
+        const motivo = (r) => r.reason?.message || "error desconocido";
+        if (ctx.status === "fulfilled")
+            atiendeEl.textContent = ctx.value.atiende;
+        else
+            fallos.push(`usuario (${motivo(ctx)})`);
+        if (ciudades.status === "fulfilled") {
+            const opciones = ciudades.value.map(c => `<option value="${c.id_ciudad}">${esc(c.nombre)}</option>`).join("");
             origenSel.innerHTML = `<option value="">Selecciona…</option>` + opciones;
             destinoSel.innerHTML = `<option value="">Selecciona…</option>` + opciones;
-            paisSel.innerHTML = `<option value="">Selecciona…</option>` +
-                paises.map(p => `<option value="${p.id_pais}">${esc(p.nombre)}</option>`).join("");
+            ciudadesListas = true;
         }
-        catch (e) {
-            mensaje(e.message || "No se pudieron cargar los catálogos.", "err");
+        else {
+            const aviso = '<option value="">Error al cargar (ver aviso abajo)</option>';
+            origenSel.innerHTML = aviso;
+            destinoSel.innerHTML = aviso;
+            fallos.push(`ciudades (${motivo(ciudades)})`);
+        }
+        if (paises.status === "fulfilled") {
+            paisesHtml = `<option value="">Selecciona…</option>` +
+                paises.value.map(p => `<option value="${p.id_pais}">${esc(p.nombre)}</option>`).join("");
+        }
+        else {
+            paisesHtml = '<option value="">No se pudieron cargar los países</option>';
+            fallos.push(`países (${motivo(paises)})`);
+        }
+        renderPasajeros();
+        if (fallos.length) {
+            const txt = `No se pudo cargar: ${fallos.join("; ")}.`;
+            mensaje(txt, "err");
+            vacio(txt);
         }
     };
     // ---------- Cliente: búsqueda por nombre o apellido ----------
@@ -159,51 +189,103 @@ document.addEventListener("DOMContentLoaded", () => {
         if (e.target !== clienteInput && !sugerenciasUl.contains(e.target))
             cerrarSugerencias();
     });
-    // ---------- Asientos disponibles del autobús del viaje elegido ----------
-    const pintarAsientos = () => {
-        if (!viajeSel) {
-            asientoSel.innerHTML = '<option value="">Selecciona un viaje</option>';
-            asientoSel.disabled = true;
-            return;
-        }
-        const libres = asientos.filter(a => !a.ocupado);
-        asientoSel.disabled = libres.length === 0;
-        asientoSel.innerHTML = libres.length
-            ? '<option value="">Selecciona…</option>' +
-                libres.map(a => `<option value="${esc(a.num_asiento)}">${esc(a.num_asiento)}</option>`).join("")
-            : '<option value="">Sin asientos disponibles</option>';
+    // ---------- Pasajeros: un bloque por cada uno ----------
+    const renderPasajeros = () => {
+        pasajerosDiv.innerHTML = pasajeros.map((p, i) => {
+            const campo = (id, etiqueta, control) => `<div class="venta-campo"><label for="venta-p${i}-${id}">${etiqueta}</label>${control}</div>`;
+            const texto = (id, valor, max) => `<input id="venta-p${i}-${id}" type="text" data-i="${i}" data-campo="${id}" maxlength="${max}" autocomplete="off" value="${esc(valor)}">`;
+            const tipos = ["INE", "Pasaporte", "Licencia"].map(t => `<option value="${t}" ${p.tipo === t ? "selected" : ""}>${t === "Licencia" ? "Licencia de conducir" : t}</option>`).join("");
+            return `
+            <div class="venta-pasajero">
+                <h4>Pasajero ${i + 1}</h4>
+                <div class="venta-grid">
+                    ${campo("nombre", "Nombre", texto("nombre", p.nombre, 30))}
+                    ${campo("paterno", "Apellido paterno", texto("paterno", p.paterno, 30))}
+                    ${campo("materno", "Apellido materno (opcional)", texto("materno", p.materno, 30))}
+                    ${campo("asiento", "Asiento", `<select id="venta-p${i}-asiento" data-i="${i}" data-campo="asiento"></select>`)}
+                    ${campo("pais", "País del documento", `<select id="venta-p${i}-pais" data-i="${i}" data-campo="pais">${paisesHtml}</select>`)}
+                    ${campo("tipo", "Tipo de documento", `<select id="venta-p${i}-tipo" data-i="${i}" data-campo="tipo">${tipos}</select>`)}
+                    ${campo("numDoc", "No. de documento", texto("numDoc", p.numDoc, 18))}
+                </div>
+            </div>`;
+        }).join("");
+        // el país elegido se restaura después de pintar las opciones
+        pasajeros.forEach((p, i) => { $(`venta-p${i}-pais`).value = p.pais; });
+        pintarAsientos();
     };
+    // Cada select de asiento muestra los libres del autobús, sin los que ya eligió otro pasajero
+    const pintarAsientos = () => {
+        pasajeros.forEach(p => {
+            if (p.asiento && !asientos.some(a => a.num_asiento === p.asiento && !a.ocupado))
+                p.asiento = "";
+        });
+        const elegidos = pasajeros.map(p => p.asiento).filter(Boolean);
+        pasajeros.forEach((p, i) => {
+            const sel = document.getElementById(`venta-p${i}-asiento`);
+            if (!sel)
+                return;
+            if (!viajeSel) {
+                sel.innerHTML = '<option value="">Selecciona un viaje</option>';
+                sel.disabled = true;
+                return;
+            }
+            const disponibles = asientos.filter(a => !a.ocupado && (a.num_asiento === p.asiento || !elegidos.includes(a.num_asiento)));
+            sel.disabled = disponibles.length === 0;
+            sel.innerHTML = disponibles.length
+                ? '<option value="">Selecciona…</option>' + disponibles.map(a => `<option value="${esc(a.num_asiento)}" ${a.num_asiento === p.asiento ? "selected" : ""}>${esc(a.num_asiento)}</option>`).join("")
+                : '<option value="">Sin asientos disponibles</option>';
+        });
+    };
+    const alCambiarCampo = (e) => {
+        const el = e.target;
+        const i = Number(el.dataset.i);
+        const campo = el.dataset.campo;
+        if (!campo || Number.isNaN(i) || !pasajeros[i])
+            return;
+        pasajeros[i][campo] = el.value;
+        if (campo === "asiento")
+            pintarAsientos();
+    };
+    pasajerosDiv.addEventListener("input", alCambiarCampo);
+    pasajerosDiv.addEventListener("change", alCambiarCampo);
     const cargarAsientos = async (idViaje) => {
         asientos = await pedir(`${BASE}/viajes/${idViaje}/asientos`);
         pintarAsientos();
     };
+    // ---------- Contador de pasajeros ----------
+    const cambiarPasajeros = (n) => {
+        n = Math.min(MAX_PASAJEROS, Math.max(1, n));
+        if (n === pasajeros.length)
+            return;
+        while (pasajeros.length < n)
+            pasajeros.push(nuevoPasajero());
+        pasajeros.length = n;
+        numPasajerosInput.value = String(n);
+        if (viajeSel && viajeSel.asientos_libres < n) {
+            limpiarSeleccion();
+            mensaje("El viaje elegido no tiene asientos suficientes. Elige otro.", "err");
+        }
+        renderPasajeros();
+        pintarViajes();
+    };
+    btnMas.addEventListener("click", () => cambiarPasajeros(pasajeros.length + 1));
+    btnMenos.addEventListener("click", () => cambiarPasajeros(pasajeros.length - 1));
     // ---------- Lista de viajes ----------
     const vacio = (txt) => {
         viajesDiv.innerHTML = `<div class="venta-vacio">${esc(txt)}</div>`;
     };
-    const limpiarSeleccion = () => {
+    function limpiarSeleccion() {
         viajeSel = null;
         asientos = [];
+        pasajeros.forEach(p => { p.asiento = ""; });
         pintarAsientos();
-    };
-    const buscarViajes = async () => {
-        limpiarSeleccion();
-        mensaje("");
-        const o = origenSel.value, d = destinoSel.value;
-        if (!fechaValida() || !o || !d)
-            return vacio("Elige origen, destino y fecha para ver los viajes.");
-        if (o === d)
-            return vacio("El origen y el destino deben ser distintos.");
-        try {
-            viajes = await pedir(`${BASE}/viajes?id_ciudad_origen=${o}&id_ciudad_destino=${d}&fecha=${fechaInput.value}`);
-        }
-        catch (e) {
-            return vacio(e.message);
-        }
+    }
+    function pintarViajes() {
         if (!viajes.length)
-            return vacio("No hay viajes para esa ruta y fecha.");
+            return;
+        const n = pasajeros.length;
         viajesDiv.innerHTML = viajes.map(v => `
-            <div class="venta-viaje" data-id="${v.id_viaje}">
+            <div class="venta-viaje ${viajeSel?.id_viaje === v.id_viaje ? "sel" : ""}" data-id="${v.id_viaje}">
                 <div class="venta-tramo">
                     <small>Salida (${diaSemana(v.fecha_salida)})</small>
                     <strong>${diaMes(v.fecha_salida)}</strong>
@@ -218,12 +300,31 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="venta-info">
                     <strong>${esc(v.nombre)}</strong>
                     <span>${esc(v.transporte)}</span>
-                    <span>${v.asientos_libres} asientos libres</span>
+                    <span>${v.asientos_libres} ${v.asientos_libres === 1 ? "asiento libre" : "asientos libres"}</span>
                 </div>
-                <div class="venta-precio">${dinero(v.costo)}</div>
+                <div class="venta-precio">${dinero(v.costo * n)}${n > 1 ? `<small>${n} × ${dinero(v.costo)}</small>` : ""}</div>
                 <button type="button" class="btn-sel" data-id="${v.id_viaje}"
-                    ${v.asientos_libres <= 0 ? "disabled" : ""}>Seleccionar</button>
+                    ${v.asientos_libres < n ? "disabled" : ""}>Seleccionar</button>
             </div>`).join("");
+    }
+    const buscarViajes = async () => {
+        limpiarSeleccion();
+        viajes = [];
+        mensaje("");
+        const o = origenSel.value, d = destinoSel.value;
+        if (!fechaValida() || !o || !d)
+            return vacio("Elige origen, destino y fecha para ver los viajes.");
+        if (o === d)
+            return vacio("El origen y el destino deben ser distintos.");
+        try {
+            viajes = await pedir(`${BASE}/viajes?id_ciudad_origen=${o}&id_ciudad_destino=${d}&fecha=${fechaInput.value}`);
+        }
+        catch (e) {
+            return vacio(e.message);
+        }
+        if (!viajes.length)
+            return vacio("No hay viajes para esa ruta y fecha.");
+        pintarViajes();
     };
     viajesDiv.addEventListener("click", async (e) => {
         const btn = e.target.closest("button[data-id]");
@@ -233,7 +334,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!v)
             return;
         viajeSel = v;
-        viajesDiv.querySelectorAll(".venta-viaje").forEach(r => r.classList.toggle("sel", Number(r.dataset.id) === v.id_viaje));
+        pintarViajes();
         mensaje(`Viaje seleccionado: ${fmtHora(v.fecha_salida)}`, "ok");
         try {
             await cargarAsientos(v.id_viaje);
@@ -245,7 +346,7 @@ document.addEventListener("DOMContentLoaded", () => {
     origenSel.addEventListener("change", buscarViajes);
     destinoSel.addEventListener("change", buscarViajes);
     fechaInput.addEventListener("change", buscarViajes);
-    // ---------- Boleto en PDF ----------
+    // ---------- Boletos en PDF (una página por pasajero) ----------
     // El botón "Vender" todavía no hace nada: más adelante llevará a la pestaña de pago.
     btnDescargar.addEventListener("click", async () => {
         if (!clienteInput.value.trim())
@@ -256,24 +357,39 @@ document.addEventListener("DOMContentLoaded", () => {
             return mensaje("Elige la fecha del viaje.", "err");
         if (!viajeSel)
             return mensaje("Selecciona un viaje de la lista.", "err");
-        const num = asientoSel.value;
-        if (!num)
-            return mensaje("Selecciona un asiento.", "err");
+        if (viajeSel.asientos_libres < pasajeros.length)
+            return mensaje("El viaje no tiene asientos suficientes.", "err");
+        for (let i = 0; i < pasajeros.length; i++) {
+            const p = pasajeros[i];
+            if (!p.nombre.trim())
+                return mensaje(`Escribe el nombre del pasajero ${i + 1}.`, "err");
+            if (!p.paterno.trim())
+                return mensaje(`Escribe el apellido paterno del pasajero ${i + 1}.`, "err");
+            if (!p.asiento)
+                return mensaje(`Selecciona el asiento del pasajero ${i + 1}.`, "err");
+        }
         btnDescargar.disabled = true;
         try {
-            // Se vuelve a consultar por si otro empleado ocupó el asiento mientras tanto
+            // Se vuelve a consultar por si otro empleado ocupó un asiento mientras tanto
             await cargarAsientos(viajeSel.id_viaje);
-            const a = asientos.find(x => x.num_asiento === num);
-            if (!a)
-                return mensaje(`El asiento ${num} no existe en este autobús.`, "err");
-            if (a.ocupado)
-                return mensaje(`El asiento ${num} ya fue ocupado. Elige otro.`, "err");
-            const qs = new URLSearchParams({
-                id_viaje: String(viajeSel.id_viaje),
-                id_cliente: String(clienteId),
-                num_asiento: num,
+            for (let i = 0; i < pasajeros.length; i++) {
+                if (!pasajeros[i].asiento)
+                    return mensaje(`El asiento del pasajero ${i + 1} ya fue ocupado. Elige otro.`, "err");
+            }
+            const res = await fetch(`${BASE}/boleto-pdf`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id_viaje: viajeSel.id_viaje,
+                    id_cliente: clienteId,
+                    pasajeros: pasajeros.map(p => ({
+                        nombre: p.nombre.trim(),
+                        paterno: p.paterno.trim(),
+                        materno: p.materno.trim() || null,
+                        num_asiento: p.asiento,
+                    })),
+                }),
             });
-            const res = await fetch(`${BASE}/boleto-pdf?${qs.toString()}`);
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
                 return mensaje(typeof err.detail === "string" ? err.detail : "No se pudo generar el boleto.", "err");
@@ -281,12 +397,12 @@ document.addEventListener("DOMContentLoaded", () => {
             const url = URL.createObjectURL(await res.blob());
             const enlace = document.createElement("a");
             enlace.href = url;
-            enlace.download = "boleto_de_autobus.pdf";
+            enlace.download = pasajeros.length === 1 ? "boleto_de_autobus.pdf" : "boletos_de_autobus.pdf";
             document.body.appendChild(enlace);
             enlace.click();
             enlace.remove();
             URL.revokeObjectURL(url);
-            mensaje("Boleto descargado.", "ok");
+            mensaje(pasajeros.length === 1 ? "Boleto descargado." : "Boletos descargados.", "ok");
         }
         catch (e) {
             mensaje(e.message || "No se pudo generar el boleto.", "err");
@@ -302,8 +418,9 @@ document.addEventListener("DOMContentLoaded", () => {
         origenSel.value = "";
         destinoSel.value = "";
         fechaInput.value = hoyISO();
-        paisSel.value = "";
-        numDocInput.value = "";
+        pasajeros = [nuevoPasajero()];
+        numPasajerosInput.value = "1";
+        renderPasajeros();
         buscarViajes();
     };
     btnCancelar.addEventListener("click", limpiar);
@@ -313,7 +430,7 @@ document.addEventListener("DOMContentLoaded", () => {
     fechaInput.min = hoyISO();
     fechaInput.value = hoyISO();
     vacio("Elige origen, destino y fecha para ver los viajes.");
-    pintarAsientos();
+    renderPasajeros();
     cargarCatalogos();
     // La pantalla controla su propio cambio de vista (se ejecuta después del handler del dashboard)
     const sectionDisp = document.getElementById("section-disponibles");
@@ -338,6 +455,8 @@ document.addEventListener("DOMContentLoaded", () => {
             if (viewSubtitle)
                 viewSubtitle.textContent = "Registra la venta de un boleto para un cliente";
             fechaInput.min = hoyISO(); // por si el equipo cambió de día con la pantalla abierta
+            if (!ciudadesListas)
+                cargarCatalogos(); // reintenta si la primera carga falló
             if (viajeSel || viajes.length)
                 buscarViajes();
         });

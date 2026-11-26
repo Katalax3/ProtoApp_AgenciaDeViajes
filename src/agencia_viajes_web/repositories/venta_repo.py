@@ -232,10 +232,12 @@ class VentaRepo(BaseRepo):
             self.conn.rollback()
             raise
 
-    # ---------- Boleto "en borrador": se arma con lo elegido en pantalla, sin guardar nada ----------
-    def preparar_boleto(self, id_viaje: int, id_cliente: int, num_asiento: str) -> dict[str, Any]:
-        """Valida viaje, fecha, cliente y asiento (que exista y esté libre) y devuelve los datos del boleto.
-        No escribe nada en la BD. Lanza ValueError con mensaje legible si algo no cuadra."""
+    # ---------- Boletos "en borrador": se arman con lo elegido en pantalla, sin guardar nada ----------
+    def preparar_boletos(self, id_viaje: int, id_cliente: int | None, pasajeros: list[dict[str, Any]],
+                         nombre_cliente: str | None = None) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+        """Valida viaje, fecha, cliente y que cada asiento exista, esté libre y no se repita.
+        No escribe nada en la BD. Devuelve (datos comunes, un boleto por pasajero).
+        Lanza ValueError con mensaje legible si algo no cuadra."""
         try:
             with self.conn.cursor() as cur:
                 cur.execute("""
@@ -253,42 +255,56 @@ class VentaRepo(BaseRepo):
                 if viaje["fecha_salida"].date() < date.today():
                     raise ValueError("La fecha de salida no puede ser menor a la de hoy.")
 
-                cur.execute("""
-                    SELECT TRIM(nombre || ' ' || paterno || ' ' || COALESCE(materno, '')) AS nombre_completo
-                    FROM usuario WHERE id_usuario = %s AND tipo_usuario = 'Cliente'
-                """, (id_cliente,))
-                cliente = cur.fetchone()
-                if not cliente:
-                    raise ValueError("El cliente no existe.")
+                # Empleado: el cliente se busca por id. Cliente logueado: ya viene su nombre de la sesión.
+                if nombre_cliente is None:
+                    cur.execute("""
+                        SELECT TRIM(nombre || ' ' || paterno || ' ' || COALESCE(materno, '')) AS nombre_completo
+                        FROM usuario WHERE id_usuario = %s AND tipo_usuario = 'Cliente'
+                    """, (id_cliente,))
+                    cliente = cur.fetchone()
+                    if not cliente:
+                        raise ValueError("El cliente no existe.")
+                    nombre_cliente = cliente["nombre_completo"]
 
-                cur.execute(
-                    "SELECT id_asiento FROM asiento WHERE id_transporte = %s AND num_asiento = %s",
-                    (viaje["id_transporte"], num_asiento),
-                )
-                asiento = cur.fetchone()
-                if not asiento:
-                    raise ValueError(f"El asiento {num_asiento} no existe en este autobús.")
+                boletos: list[dict[str, Any]] = []
+                usados: set[str] = set()
+                for i, p in enumerate(pasajeros, start=1):
+                    num = p["num_asiento"]
+                    if num in usados:
+                        raise ValueError(f"El asiento {num} está repetido entre los pasajeros.")
+                    usados.add(num)
 
-                cur.execute(
-                    "SELECT 1 FROM detalles_reserva WHERE id_viaje = %s AND id_asiento = %s",
-                    (id_viaje, asiento["id_asiento"]),
-                )
-                if cur.fetchone():
-                    raise ValueError(f"El asiento {num_asiento} ya está ocupado.")
+                    cur.execute(
+                        "SELECT id_asiento FROM asiento WHERE id_transporte = %s AND num_asiento = %s",
+                        (viaje["id_transporte"], num),
+                    )
+                    asiento = cur.fetchone()
+                    if not asiento:
+                        raise ValueError(f"El asiento {num} no existe en este autobús.")
 
-            return {
-                "cliente": cliente["nombre_completo"],
+                    cur.execute(
+                        "SELECT 1 FROM detalles_reserva WHERE id_viaje = %s AND id_asiento = %s",
+                        (id_viaje, asiento["id_asiento"]),
+                    )
+                    if cur.fetchone():
+                        raise ValueError(f"El asiento {num} ya está ocupado.")
+
+                    nombre = " ".join(x for x in (p["nombre"], p["paterno"], p.get("materno")) if x)
+                    boletos.append({"pasajero": nombre, "num_asiento": num})
+
+            base = {
+                "cliente": nombre_cliente,
                 "fecha_salida": viaje["fecha_salida"],
                 "origen": viaje["origen"],
                 "destino": viaje["destino"],
-                "num_asiento": num_asiento,
                 "transporte": viaje["transporte"],
             }
+            return base, boletos
         except ValueError:
             self.conn.rollback()
             raise
         except errors.Error as e:
-            print(f"Error al preparar el boleto: {e}")
+            print(f"Error al preparar los boletos: {e}")
             self.conn.rollback()
             raise
 

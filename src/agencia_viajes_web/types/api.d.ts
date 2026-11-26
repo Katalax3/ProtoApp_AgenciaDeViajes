@@ -18,6 +18,10 @@ export interface ContextoVenta {
     atiende: string;
 }
 
+export interface ContextoCliente {
+    nombre_completo: string;
+}
+
 export interface ClienteVenta {
     id_usuario: number;
     nombre_completo: string;

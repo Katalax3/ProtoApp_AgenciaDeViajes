@@ -58,6 +58,19 @@ class VentaCreate(BaseModel):
     num_asiento: str = Field(..., min_length=1, max_length=3)
 
 
+class PasajeroIn(BaseModel):
+    nombre: str = Field(..., min_length=1, max_length=30)
+    paterno: str = Field(..., min_length=1, max_length=30)
+    materno: str | None = Field(None, max_length=30)
+    num_asiento: str = Field(..., min_length=1, max_length=3)
+
+
+class BoletosPdfIn(BaseModel):
+    id_viaje: int = Field(..., gt=0)
+    id_cliente: int = Field(..., gt=0)
+    pasajeros: list[PasajeroIn] = Field(..., min_length=1, max_length=10)
+
+
 class VentaOut(BaseModel):
     id_boleto: int
     num_boleto: str
@@ -119,27 +132,21 @@ def vender_boleto(
 MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
 
 
-def _pdf_boleto(b: dict) -> Response:
-    """Arma el PDF 'Boleto de Autobús'. b trae: cliente, fecha_salida, origen, destino, num_asiento, transporte."""
+def _pdf_boletos(base: dict, boletos: list[dict]) -> Response:
+    """PDF 'Boleto de Autobús', una página por pasajero.
+    base trae: cliente, fecha_salida, origen, destino, transporte.
+    Cada boleto trae: pasajero, num_asiento."""
 
     # Las fuentes base de fpdf2 solo soportan latin-1
     def t(valor) -> str:
         return str(valor).encode("latin-1", "replace").decode("latin-1")
 
-    f = b["fecha_salida"]
+    f = base["fecha_salida"]
     fecha_salida = f"{f.day:02d}/{MESES[f.month - 1]}/{f.year}"
     hora_salida = f.strftime("%H:%M")
 
     pdf = FPDF()
-    pdf.add_page()
     pdf.set_margins(20, 20, 20)
-    pdf.set_y(25)
-    pdf.set_font("Helvetica", style="B", size=20)
-    pdf.set_text_color(0, 0, 0)
-    pdf.cell(0, 12, "BOLETO DE AUTOBÚS", new_x="LMARGIN", new_y="NEXT")
-    pdf.set_draw_color(0, 0, 0)
-    pdf.line(20, pdf.get_y() + 1, 190, pdf.get_y() + 1)
-    pdf.ln(10)
 
     def fila(etiqueta: str, valor: str, espacio: float = 0):
         pdf.set_font("Helvetica", style="B", size=13)
@@ -150,34 +157,52 @@ def _pdf_boleto(b: dict) -> Response:
         if espacio:
             pdf.ln(espacio)
 
-    fila("Cliente:", b["cliente"], espacio=4)
-    fila("Fecha de salida:", fecha_salida)
-    fila("Hora de salida:", hora_salida, espacio=4)
-    fila("Origen:", b["origen"])
-    fila("Destino:", b["destino"], espacio=4)
-    fila("Asiento:", b["num_asiento"])
-    fila("Autobús:", b["transporte"])
+    for bol in boletos:
+        pdf.add_page()
+        pdf.set_y(25)
+        pdf.set_font("Helvetica", style="B", size=20)
+        pdf.set_text_color(0, 0, 0)
+        pdf.cell(0, 12, "BOLETO DE AUTOBÚS", new_x="LMARGIN", new_y="NEXT")
+        pdf.set_draw_color(0, 0, 0)
+        pdf.line(20, pdf.get_y() + 1, 190, pdf.get_y() + 1)
+        pdf.ln(10)
 
+        fila("Cliente:", base["cliente"])
+        fila("Pasajero:", bol["pasajero"], espacio=4)
+        fila("Fecha de salida:", fecha_salida)
+        fila("Hora de salida:", hora_salida, espacio=4)
+        fila("Origen:", base["origen"])
+        fila("Destino:", base["destino"], espacio=4)
+        fila("Asiento:", bol["num_asiento"])
+        fila("Autobús:", base["transporte"])
+
+    nombre = "boleto_de_autobus.pdf" if len(boletos) == 1 else "boletos_de_autobus.pdf"
     return Response(
         content=bytes(pdf.output()),
         media_type="application/pdf",
-        headers={"Content-Disposition": "attachment; filename=boleto_de_autobus.pdf"},
+        headers={"Content-Disposition": f"attachment; filename={nombre}"},
     )
 
 
-# Boleto con lo elegido en pantalla (todavía no se registra la venta)
-@router.get("/api/boleto-pdf")
-def pdf_boleto_en_pantalla(
-    id_viaje: int = Query(..., gt=0),
-    id_cliente: int = Query(..., gt=0),
-    num_asiento: str = Query(..., min_length=1, max_length=3),
-    db: Connection = Depends(db_manager.get_db),
-):
+# Boletos con lo elegido en pantalla (todavía no se registra la venta)
+@router.post("/api/boleto-pdf")
+def pdf_boletos_en_pantalla(payload: BoletosPdfIn, db: Connection = Depends(db_manager.get_db)):
+    pasajeros = []
+    for i, p in enumerate(payload.pasajeros, start=1):
+        nombre, paterno = p.nombre.strip(), p.paterno.strip()
+        if not nombre or not paterno:
+            raise HTTPException(status_code=400, detail=f"Escribe el nombre y apellido paterno del pasajero {i}.")
+        pasajeros.append({
+            "nombre": nombre,
+            "paterno": paterno,
+            "materno": (p.materno or "").strip() or None,
+            "num_asiento": p.num_asiento.strip(),
+        })
     try:
-        datos = VentaRepo(db).preparar_boleto(id_viaje, id_cliente, num_asiento)
+        base, boletos = VentaRepo(db).preparar_boletos(payload.id_viaje, payload.id_cliente, pasajeros)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return _pdf_boleto(datos)
+    return _pdf_boletos(base, boletos)
 
 
 # Boleto ya registrado en la BD (se usará cuando exista el paso de pago)
@@ -186,4 +211,4 @@ def descargar_pdf_boleto(id_boleto: int, db: Connection = Depends(db_manager.get
     b = VentaRepo(db).obtener_boleto(id_boleto)
     if not b:
         raise HTTPException(status_code=404, detail="Boleto no encontrado")
-    return _pdf_boleto(b)
+    return _pdf_boletos(b, [{"pasajero": b["pasajero"], "num_asiento": b["num_asiento"]}])
