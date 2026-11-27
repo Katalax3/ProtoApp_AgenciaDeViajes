@@ -362,7 +362,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     sec.hidden = true;
             });
             if (viewTitle)
-                viewTitle.textContent = "Venta de Boletos";
+                viewTitle.textContent = "Compra de Boletos";
             if (viewSubtitle)
                 viewSubtitle.textContent = "Elige tu viaje, tus asientos y descarga tus boletos";
             fechaInput.min = hoyISO(); // por si el equipo cambió de día con la pantalla abierta
