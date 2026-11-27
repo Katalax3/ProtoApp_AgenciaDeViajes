@@ -14,7 +14,8 @@ class ViajeRepo(BaseRepo):
                 query = sql.SQL("""
                     SELECT
                         v.id_viaje,
-                        COALESCE(v.nombre, 'Sin nombre') AS nombre_viaje,
+                        v.id_nombre_viaje,
+                        COALESCE(nv.nombre, 'Sin nombre') AS nombre_viaje,
                         v.id_transporte,
                         COALESCE(t.nombre, 'N/A') AS nombre_transporte,
                         v.id_ciudad_origen,
@@ -25,6 +26,7 @@ class ViajeRepo(BaseRepo):
                         v.fecha_llegada,
                         COALESCE(v.costo, 0) AS costo
                     FROM viaje v
+                    LEFT JOIN nombre_viaje nv ON nv.id_nombre_viaje = v.id_nombre_viaje
                     LEFT JOIN ciudad co ON co.id_ciudad = v.id_ciudad_origen
                     LEFT JOIN ciudad cd ON cd.id_ciudad = v.id_ciudad_destino
                     LEFT JOIN medio_transporte t ON t.id_transporte = v.id_transporte
@@ -37,18 +39,20 @@ class ViajeRepo(BaseRepo):
             self.conn.rollback()
             return []
 
-            # --- NUEVO MÉTODO ---
     def obtener_viaje_por_id(self, id_viaje: int) -> dict[str, Any] | None:
         try:
             with self.conn.cursor(row_factory=dict_row) as cur:
                 query = sql.SQL("""
                     SELECT
-                        v.id_viaje, COALESCE(v.nombre, 'Sin nombre') AS nombre_viaje,
+                        v.id_viaje, 
+                        v.id_nombre_viaje,
+                        COALESCE(nv.nombre, 'Sin nombre') AS nombre_viaje,
                         v.id_transporte, COALESCE(t.nombre, 'N/A') AS nombre_transporte,
                         v.id_ciudad_origen, COALESCE(co.nombre, 'N/A') AS nombre_ciudad_origen,
                         v.id_ciudad_destino, COALESCE(cd.nombre, 'N/A') AS nombre_ciudad_destino,
                         v.fecha_salida, v.fecha_llegada, COALESCE(v.costo, 0) AS costo
                     FROM viaje v
+                    LEFT JOIN nombre_viaje nv ON nv.id_nombre_viaje = v.id_nombre_viaje
                     LEFT JOIN ciudad co ON co.id_ciudad = v.id_ciudad_origen
                     LEFT JOIN ciudad cd ON cd.id_ciudad = v.id_ciudad_destino
                     LEFT JOIN medio_transporte t ON t.id_transporte = v.id_transporte
@@ -61,7 +65,6 @@ class ViajeRepo(BaseRepo):
             self.conn.rollback()
             return None
 
-    # --- NUEVOS MÉTODOS PARA LAS COMBOBOX ---
     def obtener_ciudades(self) -> list[dict[str, Any]]:
         try:
             with self.conn.cursor(row_factory=dict_row) as cur:
@@ -78,4 +81,13 @@ class ViajeRepo(BaseRepo):
                 return cur.fetchall()
         except errors.Error as e:
             print(f"Error al obtener transportes: {e}")
+            return []
+
+    def obtener_nombre_viaje(self) -> list[dict[str, Any]]:
+        try:
+            with self.conn.cursor(row_factory=dict_row) as cur:
+                cur.execute("SELECT id_nombre_viaje, nombre FROM nombre_viaje ORDER BY nombre")
+                return cur.fetchall()
+        except errors.Error as e:
+            print(f"Error al obtener el nombre de los viajes: {e}")
             return []

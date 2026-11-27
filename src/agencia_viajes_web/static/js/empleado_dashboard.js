@@ -1,5 +1,6 @@
 "use strict";
 document.addEventListener("DOMContentLoaded", () => {
+    // ... (Referencias al DOM se mantienen igual) ...
     const navBtns = document.querySelectorAll(".nav-btn");
     const sectionDisponibles = document.getElementById("section-disponibles");
     const sectionCrud = document.getElementById("section-crud");
@@ -13,7 +14,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const closeModalBtn = document.getElementById("close-viaje-modal");
     const viajeForm = document.getElementById("viaje-form");
     const modalTitle = document.getElementById("viaje-modal-title");
-    // Inputs de búsqueda
     const searchDisponiblesInput = document.getElementById("search-disponibles");
     const searchCrudInput = document.getElementById("search-crud");
     let editingViajeId = null;
@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!valor || valor === "undefined" || valor === "null")
             return "&nbsp;";
         const strVal = String(valor);
+        // Esta regex extrae la hora del string ISO (ej. "2026-11-27T10:47:00")
         const match = strVal.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
         if (match) {
             const [_, year, month, day, hour, minute] = match;
@@ -46,15 +47,21 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     const cargarOpcionesFormulario = async () => {
         try {
-            const [resCiudades, resTransportes] = await Promise.all([
+            const [resCiudades, resTransportes, resNombres] = await Promise.all([
                 fetch("/empleado/api/ciudades"),
-                fetch("/empleado/api/transportes")
+                fetch("/empleado/api/transportes"),
+                fetch("/empleado/api/nombre_viajes") // NUEVO FETCH
             ]);
             const ciudades = await resCiudades.json();
             const transportes = await resTransportes.json();
+            const nombres = await resNombres.json();
+            const selectNombre = viajeForm.elements.namedItem("id_nombre_viaje");
             const selectOrigen = viajeForm.elements.namedItem("id_ciudad_origen");
             const selectDestino = viajeForm.elements.namedItem("id_ciudad_destino");
             const selectTransporte = viajeForm.elements.namedItem("id_transporte");
+            // Llenar nombres
+            const nombresHtml = nombres.map((n) => `<option value="${n.id_nombre_viaje}">${n.nombre}</option>`).join("");
+            selectNombre.innerHTML = `<option value="">Seleccione Nombre</option>` + nombresHtml;
             const ciudadesHtml = ciudades.map((c) => `<option value="${c.id_ciudad}">${c.nombre}</option>`).join("");
             selectOrigen.innerHTML = `<option value="">Seleccione Origen</option>` + ciudadesHtml;
             selectDestino.innerHTML = `<option value="">Seleccione Destino</option>` + ciudadesHtml;
@@ -65,7 +72,6 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Error al cargar opciones de los combobox", error);
         }
     };
-    // --- LÓGICA DE RENDERIZADO Y FILTRADO ---
     const renderViajesDisponibles = (viajes) => {
         if (!viajes.length) {
             viajesGrid.innerHTML = `<p style="color: var(--text-secondary);">No se encontraron viajes disponibles.</p>`;
@@ -97,7 +103,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                     <div class="viaje-costo">$${costo}</div>
                     
-                    <!-- NUEVO BOTÓN PARA DESCARGAR PDF -->
                     <div style="margin-top: 1rem; text-align: right;">
                         <a href="/empleado/api/viajes/${v.id_viaje}/pdf" target="_blank" class="btn-secondary" style="text-decoration: none; padding: 0.4rem 0.8rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 5px;">
                             📄 Descargar PDF
@@ -109,13 +114,15 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     const renderViajesCrud = (viajes) => {
         if (!viajes.length) {
-            viajesTbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: var(--text-secondary);">No se encontraron registros</td></tr>`;
+            // Actualizado a colspan=13
+            viajesTbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: var(--text-secondary);">No se encontraron registros</td></tr>`;
             return;
         }
         viajesTbody.innerHTML = viajes.map(v => {
             return `
                 <tr data-id="${v.id_viaje}" style="cursor: pointer;" title="Haz clic para seleccionar este registro">
                     <td>${safe(v.id_viaje)}</td>
+                    <td>${safe(v.id_nombre_viaje)}</td> <!-- NUEVA COLUMNA -->
                     <td>${safe(v.nombre_viaje, "Sin nombre")}</td>
                     <td>${safe(v.id_transporte)}</td>
                     <td>${safe(v.nombre_transporte)}</td>
@@ -149,16 +156,14 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const res = await fetch("/empleado/api/viajes");
             cachedViajes = await res.json();
-            // Ejecutar ambos filtros. Dependiendo de la vista activa, uno de los dos se mostrará
             filtrarDisponibles();
             filtrarCrud();
         }
         catch {
             viajesGrid.innerHTML = `<p style="color: var(--text-secondary);">Error al cargar los viajes.</p>`;
-            viajesTbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: var(--text-secondary);">Error al cargar registros</td></tr>`;
+            viajesTbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: var(--text-secondary);">Error al cargar registros</td></tr>`;
         }
     };
-    // Eventos de búsqueda
     searchDisponiblesInput.addEventListener("input", filtrarDisponibles);
     searchCrudInput.addEventListener("input", filtrarCrud);
     const cambiarVista = (vista) => {
@@ -178,7 +183,7 @@ document.addEventListener("DOMContentLoaded", () => {
             viewSubtitle.textContent = "Registra la venta de un boleto para un cliente";
         }
         if (vista !== "venta")
-            fetchViajes(); // Refrescar datos al cambiar de vista
+            fetchViajes();
     };
     navBtns.forEach(btn => {
         btn.addEventListener("click", () => {
@@ -212,7 +217,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!viaje)
             return;
         modalTitle.textContent = `Editar Viaje (ID: ${id})`;
-        viajeForm.elements.namedItem("nombre").value = viaje.nombre_viaje || viaje.nombre || "";
+        viajeForm.elements.namedItem("id_nombre_viaje").value = String(viaje.id_nombre_viaje || "");
         viajeForm.elements.namedItem("id_transporte").value = String(viaje.id_transporte || "");
         viajeForm.elements.namedItem("id_ciudad_origen").value = String(viaje.id_ciudad_origen || "");
         viajeForm.elements.namedItem("id_ciudad_destino").value = String(viaje.id_ciudad_destino || "");
@@ -226,7 +231,7 @@ document.addEventListener("DOMContentLoaded", () => {
         viajeForm.reset();
         modal.hidden = false;
         setTimeout(() => {
-            const firstInput = viajeForm.querySelector("input");
+            const firstInput = viajeForm.querySelector("select, input");
             if (firstInput)
                 firstInput.focus();
         }, 50);
@@ -245,12 +250,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const formData = new FormData(viajeForm);
         const data = Object.fromEntries(formData.entries());
         const payload = {
-            nombre: String(data.nombre || "Sin nombre"),
+            id_nombre_viaje: Number(data.id_nombre_viaje),
             id_transporte: Number(data.id_transporte),
             id_ciudad_origen: Number(data.id_ciudad_origen),
             id_ciudad_destino: Number(data.id_ciudad_destino),
-            fecha_salida: data.fecha_salida ? new Date(data.fecha_salida).toISOString() : new Date().toISOString(),
-            fecha_llegada: data.fecha_llegada ? new Date(data.fecha_llegada).toISOString() : new Date().toISOString(),
+            fecha_salida: data.fecha_salida ? String(data.fecha_salida) : new Date().toISOString().slice(0, 16),
+            fecha_llegada: data.fecha_llegada ? String(data.fecha_llegada) : new Date().toISOString().slice(0, 16),
             costo: Number(data.costo) || 0,
         };
         const url = editingViajeId ? `/empleado/api/viajes/${editingViajeId}` : `/empleado/api/viajes`;
@@ -266,7 +271,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 throw new Error(errData.detail || "No se pudo guardar el viaje.");
             }
             modal.hidden = true;
-            fetchViajes(); // Recargar datos tras guardar
+            fetchViajes();
         }
         catch (error) {
             alert(error.message || "Error al guardar el viaje.");
@@ -280,7 +285,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     const errData = await res.json().catch(() => ({}));
                     throw new Error(errData.detail || "El viaje tiene reservas asociadas.");
                 }
-                fetchViajes(); // Recargar datos tras eliminar
+                fetchViajes();
             }
             catch (error) {
                 alert(`Advertencia: ${error.message}`);
@@ -292,7 +297,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
     };
-    // Inicializar
     cargarOpcionesFormulario();
     fetchViajes();
 });

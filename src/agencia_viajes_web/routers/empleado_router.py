@@ -5,11 +5,9 @@ from pydantic import BaseModel, Field
 from psycopg import Connection
 from fpdf import FPDF
 
-# Ajusta estos imports según la estructura de tu proyecto
 from agencia_viajes_web.core.templates import templates
 from agencia_viajes_web.core.conexion import Conexion
 from agencia_viajes_web.repositories.viaje_repo import ViajeRepo
-
 from agencia_viajes_web.core.dependencies import require_role
 
 db_manager = Conexion()
@@ -22,6 +20,7 @@ router = APIRouter(
 
 class ViajeDetalleOut(BaseModel):
     id_viaje: int
+    id_nombre_viaje: int
     nombre_viaje: str | None = None
     id_transporte: int
     nombre_transporte: str | None = None
@@ -34,7 +33,7 @@ class ViajeDetalleOut(BaseModel):
     costo: float | None = 0.0
 
 class ViajeCreateUpdate(BaseModel):
-    nombre: str = Field(..., min_length=1, max_length=50)
+    id_nombre_viaje: int = Field(..., gt=0)
     id_transporte: int = Field(..., gt=0)
     id_ciudad_origen: int = Field(..., gt=0)
     id_ciudad_destino: int = Field(..., gt=0)
@@ -48,6 +47,10 @@ class CiudadOut(BaseModel):
 
 class TransporteOut(BaseModel):
     id_transporte: int
+    nombre: str
+
+class NombreViajeOut(BaseModel):
+    id_nombre_viaje: int
     nombre: str
 
 @router.get("/dashboard", response_class=HTMLResponse)
@@ -75,6 +78,10 @@ def listar_ciudades(db: Connection = Depends(db_manager.get_db)):
 def listar_transportes(db: Connection = Depends(db_manager.get_db)):
     return ViajeRepo(db).obtener_transportes()
 
+@router.get("/api/nombre_viajes", response_model=list[NombreViajeOut])
+def listar_nombre_viajes(db: Connection = Depends(db_manager.get_db)):
+    return ViajeRepo(db).obtener_nombre_viaje()
+
 @router.get("/api/viajes/{id_viaje}/pdf")
 def descargar_pdf_viaje(id_viaje: int, db: Connection = Depends(db_manager.get_db)):
     repo = ViajeRepo(db)
@@ -83,7 +90,6 @@ def descargar_pdf_viaje(id_viaje: int, db: Connection = Depends(db_manager.get_d
     if not viaje:
         raise HTTPException(status_code=404, detail="Viaje no encontrado")
 
-    # --- CREACIÓN DEL PDF CON FPDF2 ---
     pdf = FPDF()
     pdf.add_page()
     
@@ -130,8 +136,6 @@ def descargar_pdf_viaje(id_viaje: int, db: Connection = Depends(db_manager.get_d
         "Content-Disposition": f"attachment; filename=viaje_{id_viaje}.pdf"
     }
     return Response(content=pdf_bytes, media_type="application/pdf", headers=headers)
-
-# --- ENDPOINTS DE ESCRITURA ---
 
 @router.post("/api/viajes", status_code=201)
 def crear_viaje(payload: ViajeCreateUpdate, db: Connection = Depends(db_manager.get_db)):
