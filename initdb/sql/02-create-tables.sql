@@ -112,10 +112,10 @@ CREATE TABLE IF NOT EXISTS "viaje" (
 	"id_transporte" INTEGER NOT NULL,
 	"id_ciudad_destino" INTEGER NOT NULL,
 	"id_ciudad_origen" INTEGER NOT NULL,
-"id_nombre_viaje" INTEGER NOT NULL,
+	"id_nombre_viaje" INTEGER NOT NULL,
 	"fecha_salida" TIMESTAMP NOT NULL,
 	"fecha_llegada" TIMESTAMP NOT NULL,
-		"costo" NUMERIC(8,2) NOT NULL,
+	"costo" NUMERIC(8,2) NOT NULL,
 	PRIMARY KEY("id_viaje"),
 	CONSTRAINT "ck_id_ciudad_destino_id_ciudad_origen" CHECK ("id_ciudad_origen" <> "id_ciudad_destino"),
 	CONSTRAINT "ck_fecha_salida_fecha_llegada" CHECK ("fecha_salida" < "fecha_llegada"),
@@ -203,7 +203,7 @@ CREATE TABLE IF NOT EXISTS "estado_pago" (
 	"id_estado_pago" INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY,
 	"nombre" VARCHAR(40) NOT NULL UNIQUE,
 	PRIMARY KEY("id_estado_pago"),
-	CONSTRAINT ck_estado CHECK ('nombre' IN ('Parcial', 'Liquidado'))
+	CONSTRAINT ck_estado CHECK ("nombre" IN ('Parcial', 'Liquidado'))
 );
 
 CREATE TABLE IF NOT EXISTS "documento_identidad" (
