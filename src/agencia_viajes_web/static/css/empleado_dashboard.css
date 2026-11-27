@@ -1,5 +1,6 @@
 @import url('dba_dashboard.css');
 
+/* --- ESTILOS DE LAS TARJETAS DE VIAJES --- */
 .cards-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -19,3 +20,69 @@
 .viaje-card h3 { font-size: 1.05rem; font-weight: 600; }
 .viaje-info { font-size: 0.85rem; color: var(--text-secondary); display: flex; justify-content: space-between; }
 .viaje-costo { font-size: 1.1rem; font-weight: 600; color: var(--accent); margin-top: 0.5rem; }
+
+/* --- ESTILOS DE TABLAS Y FORMULARIOS GENERALES --- */
+.table-container table { width: 100%; table-layout: auto; border-collapse: collapse; }
+.table-container th, .table-container td { padding: 0.75rem; white-space: nowrap; border-bottom: 1px solid var(--border-color, #333); }
+select, input[type="text"].search-input { width: 100%; padding: 0.5rem; border-radius: 4px; background-color: var(--bg-color, #1a1a1a); color: white; border: 1px solid #444; }
+
+/* --- BARRAS DE BÚSQUEDA Y ACTION BAR --- */
+.search-bar-container { margin-bottom: 1rem; display: flex; gap: 1rem; }
+.search-input { max-width: 350px; }
+.action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem; }
+
+/* --- VENTA DE BOLETOS --- */
+#section-venta .venta-meta { display: flex; justify-content: space-between; color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem; }
+#section-venta .venta-meta strong { color: var(--text-primary); }
+#section-venta .venta-busqueda, #section-venta .venta-compra { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; align-items: end; }
+#section-venta .venta-campo { display: flex; flex-direction: column; gap: 0.4rem; }
+#section-venta .venta-campo label { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
+#section-venta select, #section-venta input { width: 100%; padding: 0.65rem 1rem; border-radius: 999px; background-color: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-subtle); font: inherit; font-size: 0.9rem; }
+#section-venta select:focus, #section-venta input:focus { outline: none; border-color: var(--border-focus); }
+#section-venta .venta-lista { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1rem; margin: 1.25rem 0; }
+#section-venta .venta-lista h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.75rem; }
+#section-venta .venta-vacio { color: var(--text-secondary); text-align: center; padding: 1rem; font-size: 0.9rem; }
+#section-venta .venta-viaje { display: grid; grid-template-columns: auto 1.5rem auto 1fr auto auto; gap: 1.25rem; align-items: center; padding: 1rem 1.25rem; margin-top: 0.75rem; background: var(--bg-canvas); border: 1px solid var(--border-subtle); border-radius: 999px; }
+#section-venta .venta-viaje:first-of-type { margin-top: 0; }
+#section-venta .venta-viaje.sel { border-color: var(--accent); background: var(--bg-surface-hover); }
+#section-venta .venta-tramo { display: flex; flex-direction: column; line-height: 1.25; }
+#section-venta .venta-tramo small { color: var(--text-secondary); font-size: 0.75rem; text-transform: capitalize; }
+#section-venta .venta-tramo strong { font-size: 1.2rem; }
+#section-venta .venta-tramo span { color: var(--accent-hover); font-weight: 600; }
+#section-venta .venta-flecha { color: var(--accent-hover); font-size: 1.6rem; font-weight: 700; text-align: center; }
+#section-venta .venta-info { display: flex; flex-direction: column; font-size: 0.85rem; color: var(--text-secondary); }
+#section-venta .venta-info strong { color: var(--text-primary); font-size: 0.95rem; }
+#section-venta .venta-precio { font-size: 1.35rem; font-weight: 700; color: var(--accent-hover); }
+#section-venta .venta-viaje button { border-radius: 999px; padding: 0.6rem 1.4rem; }
+#section-venta .venta-viaje button:disabled { opacity: 0.4; cursor: not-allowed; }
+#section-venta .venta-viaje button.btn-sel { background: transparent; color: var(--accent-hover); border: 2px solid var(--accent); font-weight: 600; cursor: pointer; }
+#section-venta .venta-campo small { color: var(--text-secondary); font-size: 0.75rem; }
+#section-venta .venta-msg { min-height: 1.4em; font-weight: 600; margin-top: 1rem; }
+#section-venta .venta-msg.ok { color: #6fd3a0; }
+#section-venta .venta-msg.err { color: var(--danger); }
+#section-venta .venta-botones { display: flex; gap: 0.75rem; margin-top: 0.75rem; }
+#section-venta .venta-botones button, #section-venta .venta-boleto button { border-radius: 999px; padding: 0.65rem 1.6rem; }
+#section-venta .venta-boleto { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1rem; display: grid; gap: 0.35rem; margin-top: 1.25rem; max-width: 520px; }
+#section-venta .venta-boleto[hidden] { display: none; }
+#section-venta .venta-boleto h3 { font-size: 0.95rem; margin-bottom: 0.25rem; }
+#section-venta .venta-compra { grid-template-columns: minmax(210px, 420px); }
+#section-venta .venta-stepper { display: flex; align-items: center; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 999px; overflow: hidden; }
+#section-venta .venta-stepper button { background: transparent; border: none; color: var(--text-primary); font-size: 1.3rem; width: 2.75rem; padding: 0.45rem 0; cursor: pointer; }
+#section-venta .venta-stepper button:hover { background: var(--bg-surface-hover); }
+#section-venta .venta-stepper input { border: none; background: transparent; text-align: center; padding: 0.65rem 0; border-radius: 0; }
+#section-venta .venta-pasajeros { display: grid; gap: 1rem; margin-top: 1.25rem; }
+#section-venta .venta-pasajero { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1rem; }
+#section-venta .venta-pasajero h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.75rem; }
+#section-venta .venta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1rem; }
+#section-venta .venta-precio small { display: block; color: var(--text-secondary); font-size: 0.75rem; font-weight: 400; }
+#section-venta .venta-autocomplete { position: relative; }
+#section-venta .venta-sug { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20; list-style: none; margin: 0; padding: 0.25rem; max-height: 240px; overflow-y: auto; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); }
+#section-venta .venta-sug[hidden] { display: none; }
+#section-venta .venta-sug li { padding: 0.5rem 0.9rem; border-radius: 8px; cursor: pointer; font-size: 0.9rem; }
+#section-venta .venta-sug li.activo, #section-venta .venta-sug li[data-i]:hover { background: var(--bg-surface-hover); }
+#section-venta .venta-sug li.sin { color: var(--text-secondary); cursor: default; }
+
+@media (max-width: 900px) {
+    #section-venta .venta-viaje { grid-template-columns: 1fr 1fr; border-radius: 16px; }
+    #section-venta .venta-flecha { display: none; }
+}
