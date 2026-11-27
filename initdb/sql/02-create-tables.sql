@@ -112,15 +112,15 @@ CREATE TABLE IF NOT EXISTS "viaje" (
 	"id_transporte" INTEGER NOT NULL,
 	"id_ciudad_destino" INTEGER NOT NULL,
 	"id_ciudad_origen" INTEGER NOT NULL,
+"id_nombre_viaje" INTEGER NOT NULL,
 	"fecha_salida" TIMESTAMP NOT NULL,
 	"fecha_llegada" TIMESTAMP NOT NULL,
-	"nombre" VARCHAR(50) NOT NULL UNIQUE,
-	"costo" NUMERIC(8,2) NOT NULL,
+		"costo" NUMERIC(8,2) NOT NULL,
 	PRIMARY KEY("id_viaje"),
 	CONSTRAINT "ck_id_ciudad_destino_id_ciudad_origen" CHECK ("id_ciudad_origen" <> "id_ciudad_destino"),
 	CONSTRAINT "ck_fecha_salida_fecha_llegada" CHECK ("fecha_salida" < "fecha_llegada"),
 	CONSTRAINT "ck_costo_no_cero" CHECK ("costo" > 0),
-	CONSTRAINT "ck_formato_nombre" CHECK ("nombre" ~ '^[A-ZÁÉÍÓÚÑ][a-zàéíóúñ]+-[A-ZÁÉÍÓÚÑ][a-zàéíóúñ]+$')
+	CONSTRAINT "viaje_unique_0" UNIQUE ("id_nombre_viaje", "fecha_salida", "fecha_llegada")
 );
 
 CREATE TABLE IF NOT EXISTS "agencia_viaje" (
@@ -217,6 +217,13 @@ CREATE TABLE IF NOT EXISTS "documento_identidad" (
 	CONSTRAINT "documento_identidad_unique_1" UNIQUE ("id_pasajero", "id_documento_identidad")
 );
 
+CREATE TABLE IF NOT EXISTS "nombre_viaje" (
+	"id_nombre_viaje" INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY,
+	"nombre" VARCHAR(50) NOT NULL,
+	PRIMARY KEY("id_nombre_viaje"),
+	CONSTRAINT "ck_formato_nombre" CHECK ("nombre" ~ '^[A-ZÁÉÍÓÚÑ][a-zàéíóúñ]+-[A-ZÁÉÍÓÚÑ][a-zàéíóúñ]+$')
+);
+
 ALTER TABLE "parcialidad"
 ADD FOREIGN KEY("id_factura") REFERENCES "factura"("id_factura")
 ON UPDATE NO ACTION ON DELETE NO ACTION;
@@ -297,4 +304,10 @@ ADD FOREIGN KEY("id_pais_emision") REFERENCES "pais"("id_pais")
 ON UPDATE NO ACTION ON DELETE NO ACTION;
 ALTER TABLE "reserva"
 ADD FOREIGN KEY("id_cliente") REFERENCES "usuario"("id_usuario")
+ON UPDATE NO ACTION ON DELETE NO ACTION;
+ALTER TABLE "usuario"
+ADD FOREIGN KEY("id_agencia") REFERENCES "agencia"("id_agencia")
+ON UPDATE NO ACTION ON DELETE NO ACTION;
+ALTER TABLE "viaje"
+ADD FOREIGN KEY("id_nombre_viaje") REFERENCES "nombre_viaje"("id_nombre_viaje")
 ON UPDATE NO ACTION ON DELETE NO ACTION;
